@@ -69,6 +69,21 @@ target_include_directories(test_adversarial PRIVATE
 )
 add_test(NAME PresolveAdversarial COMMAND test_adversarial)
 
+# Postsolve: reconstructs the original-model solution from the
+# PresolveResult/PostsolveMetadata produced above. Built the same way as the
+# presolve test executables (source list, not a shared library) to match the
+# existing pattern in this file.
+add_executable(test_postsolve
+    tests/postsolve/test_postsolver.cpp
+    src/model/model.cpp
+    src/presolve/presolver.cpp
+    src/postsolve/postsolver.cpp
+)
+target_include_directories(test_postsolve PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+add_test(NAME PostsolveTests COMMAND test_postsolve)
+
 # Linear programming engine. Self-contained and C++17; builds the library only.
 # Its tests and benchmark harnesses stay off here and are enabled by configuring
 # pdlp_engine/ standalone, or with -DPDLP_BUILD_TESTS=ON -DPDLP_BUILD_TOOLS=ON.
