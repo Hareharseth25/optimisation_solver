@@ -1,0 +1,28 @@
+
+# Build directories
+build/
+build*/
+**/build/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# macOS
+.DS_Store
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Compiled binaries / libraries
+*.o
+*.a
+*.so
+*.dylib
+*.exe
