@@ -142,21 +142,26 @@ bool Postsolver::validateMapping(
 
   // Every original variable index referenced by the mapping must be in range,
   // and no original variable may be claimed by more than one presolved variable.
-  std::unordered_set<std::size_t> seenOrigVars;
-  seenOrigVars.reserve(meta.presolvedToOriginalVar.size());
+  // Track coverage across all original variables to ensure every original variable
+  // is represented exactly once (either mapped or fixed, never both, never missing).
+  std::vector<bool> covered(nOrigVars, false);
+
   for (std::size_t origIdx : meta.presolvedToOriginalVar) {
     if (origIdx >= nOrigVars) {
       return invalid(
           "Invalid mapping: presolvedToOriginalVar contains an out-of-range original variable index.");
     }
-    if (!seenOrigVars.insert(origIdx).second) {
+    if (covered[origIdx]) {
       return invalid(
           "Invalid mapping: presolvedToOriginalVar contains a duplicate original variable index.");
     }
+    covered[origIdx] = true;
   }
 
   // Fixed-variable metadata must reference valid original variables, including
   // any bilinear cross-contribution indices that will later be dereferenced.
+  std::unordered_set<std::size_t> fixedOrigVars;
+  fixedOrigVars.reserve(meta.fixedVariables.size());
   for (const auto& fixed : meta.fixedVariables) {
     if (fixed.originalIndex >= nOrigVars) {
       return invalid(
@@ -164,10 +169,16 @@ bool Postsolver::validateMapping(
     }
     // A variable that is fixed by presolve cannot also survive into the
     // presolved model under the same original index.
-    if (seenOrigVars.count(fixed.originalIndex) != 0) {
+    if (covered[fixed.originalIndex]) {
       return invalid(
           "Invalid mapping: fixed-variable original index also appears in presolvedToOriginalVar.");
     }
+    if (!fixedOrigVars.insert(fixed.originalIndex).second) {
+      return invalid(
+          "Invalid mapping: duplicate fixed-variable record for original variable index.");
+    }
+    covered[fixed.originalIndex] = true;
+
     for (const auto& [otherOrigIdx, contribution] : fixed.quadraticCrossContributions) {
       (void)contribution;
       if (otherOrigIdx >= nOrigVars) {
@@ -175,6 +186,16 @@ bool Postsolver::validateMapping(
             "Invalid mapping: fixed-variable cross-contribution references an out-of-range "
             "original variable index.");
       }
+    }
+  }
+
+  // Verify complete original-variable coverage:
+  // mapped original variables + fixed variables = every original variable exactly once.
+  for (std::size_t i = 0; i < nOrigVars; ++i) {
+    if (!covered[i]) {
+      return invalid(
+          "Invalid mapping: original variable " + std::to_string(i) +
+          " is neither mapped nor fixed (incomplete variable coverage).");
     }
   }
 
@@ -206,7 +227,19 @@ bool Postsolver::validateSolution(
   result.maxBoundResidual = 0.0;
   result.maxConstraintResidual = 0.0;
 
-  // Validate Variable Bounds & Integrality
+  // 1. Explicitly reject all non-finite primal values (NaN, +Inf, -Inf)
+  // before ordinary bound, integrality, or constraint validation.
+  for (std::size_t i = 0; i < originalModel.variables.size(); ++i) {
+    double val = x[i];
+    if (!std::isfinite(val)) {
+      result.status = PostsolveStatus::BoundViolation;
+      result.errorMessage = "Non-finite primal value on variable " + originalModel.variables[i].name;
+      result.maxBoundResidual = std::numeric_limits<double>::infinity();
+      return false;
+    }
+  }
+
+  // 2. Validate Variable Bounds & Integrality
   for (std::size_t i = 0; i < originalModel.variables.size(); ++i) {
     const auto& var = originalModel.variables[i];
     double val = x[i];
@@ -257,6 +290,14 @@ bool Postsolver::validateSolution(
 
   activity += term.value * x[term.variableIndex];
 }
+
+    // Check non-finite activity
+    if (!std::isfinite(activity)) {
+      result.status = PostsolveStatus::ConstraintViolation;
+      result.errorMessage = "Non-finite activity on constraint " + constraint.name;
+      result.maxConstraintResidual = std::numeric_limits<double>::infinity();
+      return false;
+    }
 
     // Check Lower Bound violation
     if (activity < constraint.lowerBound - tolerance_) {

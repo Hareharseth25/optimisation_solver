@@ -553,6 +553,94 @@ void test_empty_presolved_model() {
   std::cout << "[PASSED] test_empty_presolved_model\n";
 }
 
+// ============================================================
+// P. Invalid mapping: incomplete variable coverage (neither mapped nor fixed)
+// ============================================================
+void test_invalid_mapping_incomplete_coverage() {
+  model::Model model;
+  model.name = "IncompleteCoverage";
+  model.variables.push_back(makeVar("x0", 0.0, 10.0));
+  model.variables.push_back(makeVar("x1", 0.0, 10.0));
+  model.variables.push_back(makeVar("x2", 0.0, 10.0));
+
+  // Presolve maps only x0 and x1. Variable x2 is neither in
+  // presolvedToOriginalVar nor in fixedVariables.
+  presolve::PresolveResult presolveRes;
+  presolveRes.originalVariables = 3;
+  presolveRes.presolvedVariables = 2;
+  presolveRes.postsolve.presolvedToOriginalVar = {0, 1};
+  presolveRes.postsolve.originalToPresolvedVar = {0, 1, -1};
+
+  std::vector<double> presolvedSolution = {1.0, 2.0};
+
+  postsolve::Postsolver postsolver;
+  auto result = postsolver.process(model, presolveRes, presolvedSolution);
+
+  assert(!result.isSuccess());
+  assert(result.status == postsolve::PostsolveStatus::InvalidMapping);
+
+  std::cout << "[PASSED] test_invalid_mapping_incomplete_coverage\n";
+}
+
+// ============================================================
+// Q. Reject non-finite primal solution: NaN
+// ============================================================
+void test_reject_nan_primal_solution() {
+  model::Model model;
+  model.variables.push_back(makeVar("x0", 0.0, 10.0));
+
+  auto presolveRes = makeIdentityResult(model);
+  std::vector<double> presolvedSolution = {std::numeric_limits<double>::quiet_NaN()};
+
+  postsolve::Postsolver postsolver;
+  auto result = postsolver.process(model, presolveRes, presolvedSolution);
+
+  assert(!result.isSuccess());
+  assert(result.status == postsolve::PostsolveStatus::BoundViolation);
+
+  std::cout << "[PASSED] test_reject_nan_primal_solution\n";
+}
+
+// ============================================================
+// R. Reject non-finite primal solution: +Inf
+// ============================================================
+void test_reject_pos_inf_primal_solution() {
+  model::Model model;
+  // Free variable with [-INF, +INF] bounds: +Inf must still be rejected.
+  model.variables.push_back(makeVar("x0", -INF, INF));
+
+  auto presolveRes = makeIdentityResult(model);
+  std::vector<double> presolvedSolution = {INF};
+
+  postsolve::Postsolver postsolver;
+  auto result = postsolver.process(model, presolveRes, presolvedSolution);
+
+  assert(!result.isSuccess());
+  assert(result.status == postsolve::PostsolveStatus::BoundViolation);
+
+  std::cout << "[PASSED] test_reject_pos_inf_primal_solution\n";
+}
+
+// ============================================================
+// S. Reject non-finite primal solution: -Inf
+// ============================================================
+void test_reject_neg_inf_primal_solution() {
+  model::Model model;
+  // Free variable with [-INF, +INF] bounds: -Inf must still be rejected.
+  model.variables.push_back(makeVar("x0", -INF, INF));
+
+  auto presolveRes = makeIdentityResult(model);
+  std::vector<double> presolvedSolution = {-INF};
+
+  postsolve::Postsolver postsolver;
+  auto result = postsolver.process(model, presolveRes, presolvedSolution);
+
+  assert(!result.isSuccess());
+  assert(result.status == postsolve::PostsolveStatus::BoundViolation);
+
+  std::cout << "[PASSED] test_reject_neg_inf_primal_solution\n";
+}
+
 int main() {
   test_no_transformations();
   test_fixed_continuous_variable();
@@ -572,6 +660,10 @@ int main() {
   test_diagonal_quadratic_no_half_factor();
   test_objective_sense_not_negated();
   test_empty_presolved_model();
+  test_invalid_mapping_incomplete_coverage();
+  test_reject_nan_primal_solution();
+  test_reject_pos_inf_primal_solution();
+  test_reject_neg_inf_primal_solution();
 
   std::cout << "All postsolve tests passed successfully!\n";
   return 0;
