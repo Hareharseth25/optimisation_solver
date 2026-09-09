@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <map>
 #include <string>
 #include <unordered_set>
 
@@ -321,6 +322,363 @@ bool Postsolver::validateSolution(
   }
 
   return true;
+}
+
+}  // namespace postsolve
+namespace postsolve {
+
+// ============================================================================
+// Dual and reduced-cost reconstruction
+// ============================================================================
+//
+// CONVENTION. Everything below is expressed in the model's OWN objective
+// sense, so no sense flip happens here -- the engines already report shadow
+// prices that way, and applying a second correction is how a sign error gets
+// introduced.
+//
+//   y_i  = d(objective) / d(rhs of row i)
+//   d_j  = grad_j f(x*) - sum_i a_ij * y_i
+//
+// At an optimum d_j is zero for a variable strictly inside its bounds, and is
+// the bound multiplier otherwise. For MINIMIZE, d_j >= 0 at a lower bound and
+// <= 0 at an upper bound; for MAXIMIZE the signs reverse. Row multipliers
+// obey the matching rule against the side that is tight.
+//
+// THE PROBLEM THIS SOLVES. Presolve can derive a variable bound FROM a row --
+// from "4x + 5y <= 28" with x >= 0 it derives y <= 5.6. The reduced model
+// then carries that restriction as a bound, and the engine naturally parks
+// part of the row's price on it. Copying reduced row duals into original
+// positions therefore under-reports the row: measured on that model the row
+// price comes back 0.75 where the original model's shadow price is 0.8, with
+// the missing 0.05 sitting on y's derived bound.
+//
+// THE TRANSFER. Undoing such a bound means moving its multiplier onto the row
+// it came from. With coefficient a_ik of variable k in row i:
+//
+//     delta = d_k / a_ik ,   y_i += delta ,   d_j -= delta * a_ij  for all j in row i
+//
+// after which d_k is exactly zero -- the bound no longer exists, so it can
+// carry no multiplier -- and the row absorbs the price. On the model above
+// delta = 0.25/5 = 0.05 and the row goes to 0.8 exactly.
+//
+// WHY THE OTHER VARIABLES IN THE ROW CAN ABSORB IT. The transfer perturbs
+// d_j for every other j in row i, which would be invalid if any of them were
+// strictly inside its bounds, since stationarity forces d_j = 0 there. That
+// cannot happen. A derived bound u_k = (U_i - otherMin)/a_ik is only ACTIVE
+// when row i is tight AND every other variable in it sits exactly at the
+// bound that attains otherMin -- otherwise the row still has slack and x_k
+// could move further. Those variables are therefore all at bounds, where a
+// nonzero d_j is permitted. The perturbation also moves them in the safe
+// direction: a variable at the otherMin-attaining bound has a_ij > 0 exactly
+// when it sits at its lower bound, so -delta*a_ij pushes d_j the way that
+// bound's sign condition already allows.
+//
+// NON-UNIQUENESS. Degenerate problems admit many valid multiplier vectors.
+// This returns one that satisfies the original model's conditions rather than
+// attempting to match any particular reference solver's choice.
+
+namespace {
+constexpr double kDualEps = 1e-9;
+
+// A row that is not tight at the solution cannot carry a nonzero price --
+// complementary slackness. This has to be checked before moving any
+// multiplier onto a row: a bound the solution sits on is not evidence that
+// the ROW it came from is binding. Measured on a model whose singleton row
+// 2x <= 6 became x <= 3 while the optimum had x = 0, transferring
+// unconditionally moved x's OWN lower-bound multiplier onto that slack row
+// and broke stationarity by 0.1.
+bool rowIsTight(const model::Constraint& row, const std::vector<double>& x, double tol) {
+  double act = 0.0;
+  for (const auto& t : row.linearTerms) {
+    if (t.variableIndex >= 0 && static_cast<std::size_t>(t.variableIndex) < x.size()) {
+      act += t.value * x[static_cast<std::size_t>(t.variableIndex)];
+    }
+  }
+  return (std::isfinite(row.lowerBound) && std::abs(act - row.lowerBound) <= tol) ||
+         (std::isfinite(row.upperBound) && std::abs(act - row.upperBound) <= tol);
+}
+
+double coefficientOf(const model::Constraint& row, std::size_t variableIndex) {
+  double a = 0.0;
+  for (const auto& t : row.linearTerms) {
+    if (t.variableIndex >= 0 &&
+        static_cast<std::size_t>(t.variableIndex) == variableIndex) {
+      a += t.value;  // duplicate entries on one variable accumulate
+    }
+  }
+  return a;
+}
+}  // namespace
+
+std::vector<double> Postsolver::objectiveGradient(
+    const model::Model& model, const std::vector<double>& x) const {
+  std::vector<double> g(model.variables.size(), 0.0);
+  for (const auto& t : model.objective.linearTerms) {
+    if (t.variableIndex >= 0 &&
+        static_cast<std::size_t>(t.variableIndex) < g.size()) {
+      g[static_cast<std::size_t>(t.variableIndex)] += t.value;
+    }
+  }
+  for (const auto& q : model.objective.quadraticTerms) {
+    const auto i = static_cast<std::size_t>(q.variableIndex1);
+    const auto j = static_cast<std::size_t>(q.variableIndex2);
+    if (i >= g.size() || j >= g.size()) continue;
+    if (i == j) {
+      // value * x_i^2  ->  d/dx_i = 2 * value * x_i
+      g[i] += 2.0 * q.value * x[i];
+    } else {
+      // value * x_i * x_j, stored once
+      g[i] += q.value * x[j];
+      g[j] += q.value * x[i];
+    }
+  }
+  return g;
+}
+
+void Postsolver::reconstructDuals(
+    const model::Model& originalModel,
+    const presolve::PresolveResult& presolveResult,
+    const std::vector<double>& presolvedConstraintDuals,
+    PostsolveResult& result) const {
+  const auto& meta = presolveResult.postsolve;
+  const std::size_t n = originalModel.variables.size();
+  const std::size_t m = originalModel.constraints.size();
+  const std::vector<double>& x = result.primalSolution;
+
+  if (presolvedConstraintDuals.size() != meta.presolvedToOriginalConstraint.size()) {
+    result.dualsAvailable = false;
+    result.dualsUnavailableReason =
+        "reduced dual vector has " + std::to_string(presolvedConstraintDuals.size()) +
+        " entries but presolve left " +
+        std::to_string(meta.presolvedToOriginalConstraint.size()) + " constraints";
+    return;
+  }
+
+  // Seed: rows that survived presolve keep the engine's price; rows presolve
+  // removed start at zero and are filled in as the log is reversed.
+  std::vector<double> y(m, 0.0);
+  for (std::size_t r = 0; r < presolvedConstraintDuals.size(); ++r) {
+    const std::size_t orig = meta.presolvedToOriginalConstraint[r];
+    if (orig >= m) {
+      result.dualsAvailable = false;
+      result.dualsUnavailableReason = "constraint mapping points outside the original model";
+      return;
+    }
+    y[orig] = presolvedConstraintDuals[r];
+  }
+
+  // d_j = grad_j - sum_i a_ij y_i, kept consistent with y throughout.
+  std::vector<double> d = objectiveGradient(originalModel, x);
+  const auto applyRow = [&](std::size_t row, double delta) {
+    y[row] += delta;
+    for (const auto& t : originalModel.constraints[row].linearTerms) {
+      if (t.variableIndex >= 0 && static_cast<std::size_t>(t.variableIndex) < n) {
+        d[static_cast<std::size_t>(t.variableIndex)] -= delta * t.value;
+      }
+    }
+  };
+  for (std::size_t i = 0; i < m; ++i) {
+    if (y[i] != 0.0) {
+      for (const auto& t : originalModel.constraints[i].linearTerms) {
+        if (t.variableIndex >= 0 && static_cast<std::size_t>(t.variableIndex) < n) {
+          d[static_cast<std::size_t>(t.variableIndex)] -= y[i] * t.value;
+        }
+      }
+    }
+  }
+
+  // Index the removed-constraint records so a RemoveConstraint transformation
+  // can find the details of what it removed.
+  std::map<std::size_t, const presolve::RemovedConstraintRecord*> removed;
+  for (const auto& rec : meta.removedConstraints) removed[rec.originalIndex] = &rec;
+
+  const double tol = tolerance_;
+
+  // Reverse order: the last transformation applied is the first undone.
+  for (auto it = presolveResult.transformations.rbegin();
+       it != presolveResult.transformations.rend(); ++it) {
+    const auto& tr = *it;
+    switch (tr.type) {
+      case presolve::TransformationType::TightenLowerBound:
+      case presolve::TransformationType::TightenUpperBound: {
+        const std::size_t k = tr.originalVariableIndex;
+        const std::size_t i = tr.originalConstraintIndex;
+        if (k >= n || i >= m) break;
+        // Only a bound that the solution actually sits on carries a
+        // multiplier; an inactive derived bound has none to move.
+        if (std::abs(x[k] - tr.newValue) > tol) break;
+        // If the ORIGINAL bound is equally tight the restriction was not
+        // really introduced by the row, so the multiplier stays on the bound.
+        if (std::abs(tr.oldValue - tr.newValue) <= tol) break;
+        // The row must itself be binding, or it can hold no price.
+        if (!rowIsTight(originalModel.constraints[i], x, tol)) break;
+        const double a = coefficientOf(originalModel.constraints[i], k);
+        if (std::abs(a) <= kDualEps) break;
+        if (std::abs(d[k]) <= kDualEps) break;  // no price parked on it
+        applyRow(i, d[k] / a);                  // leaves d[k] == 0
+        break;
+      }
+      case presolve::TransformationType::RemoveConstraint: {
+        const std::size_t i = tr.originalConstraintIndex;
+        if (i >= m) break;
+        auto found = removed.find(i);
+        if (found == removed.end()) break;
+        const auto* rec = found->second;
+        if (rec->wasSingleton) {
+          // The row was turned into a bound on one variable. Its price is
+          // whatever ended up on that bound.
+          const std::size_t k = rec->singletonOriginalVarIndex;
+          const double a = rec->singletonCoefficient;
+          if (k >= n || std::abs(a) <= kDualEps) break;
+          // Same gate: x sitting on a bound does not mean the row that
+          // produced that bound is tight. Here the variable may simply be at
+          // its own original bound, whose multiplier belongs to the bound and
+          // not to this row.
+          if (!rowIsTight(originalModel.constraints[i], x, tol)) break;
+          if (std::abs(d[k]) <= kDualEps) break;
+          applyRow(i, d[k] / a);
+        }
+        // Redundant, duplicate, parallel and empty rows cannot be binding at
+        // the optimum -- a duplicate's price stays wholly on the row that
+        // survived -- so zero is a valid multiplier and is already in place.
+        break;
+      }
+      case presolve::TransformationType::FixVariable:
+        // A fixed variable has lower == upper, so any reduced cost satisfies
+        // its bound conditions. d[k] as computed is already correct.
+        break;
+      default:
+        break;
+    }
+  }
+
+  result.constraintDuals = std::move(y);
+  result.reducedCosts = std::move(d);
+  result.dualsAvailable = true;
+  result.dualsUnavailableReason.clear();
+}
+
+}  // namespace postsolve
+
+namespace postsolve {
+
+double Postsolver::dualResidual(const model::Model& originalModel,
+                                const PostsolveResult& result) const {
+  const std::size_t n = originalModel.variables.size();
+  const std::size_t m = originalModel.constraints.size();
+  if (result.constraintDuals.size() != m || result.reducedCosts.size() != n) {
+    return std::numeric_limits<double>::infinity();
+  }
+  const std::vector<double>& x = result.primalSolution;
+  const std::vector<double>& y = result.constraintDuals;
+  const std::vector<double>& d = result.reducedCosts;
+  const bool maximise =
+      originalModel.objective.sense == model::ObjectiveSense::Maximize;
+
+  // Scale-aware tolerance: an absolute floor plus a term proportional to the
+  // size of the numbers involved, so a model whose coefficients are 1e6 is
+  // not judged against the same absolute slack as one whose numbers are 1.
+  double scale = 1.0;
+  const std::vector<double> g = objectiveGradient(originalModel, x);
+  for (double v : g) scale = std::max(scale, std::abs(v));
+  for (double v : y) scale = std::max(scale, std::abs(v));
+  const double tol = tolerance_ * scale;
+
+  double worst = 0.0;
+
+  // 1. Stationarity: d_j must equal grad_j - sum_i a_ij y_i by construction.
+  {
+    std::vector<double> lhs = g;
+    for (std::size_t i = 0; i < m; ++i) {
+      if (y[i] == 0.0) continue;
+      for (const auto& t : originalModel.constraints[i].linearTerms) {
+        if (t.variableIndex >= 0 && static_cast<std::size_t>(t.variableIndex) < n) {
+          lhs[static_cast<std::size_t>(t.variableIndex)] -= y[i] * t.value;
+        }
+      }
+    }
+    for (std::size_t j = 0; j < n; ++j) worst = std::max(worst, std::abs(lhs[j] - d[j]));
+  }
+
+  // 2. Reduced-cost sign conditions against the ORIGINAL bounds, and
+  //    complementary slackness on those bounds.
+  for (std::size_t j = 0; j < n; ++j) {
+    const auto& v = originalModel.variables[j];
+    const bool atLower = std::isfinite(v.lowerBound) && std::abs(x[j] - v.lowerBound) <= tol;
+    const bool atUpper = std::isfinite(v.upperBound) && std::abs(x[j] - v.upperBound) <= tol;
+    const bool fixed = atLower && atUpper;
+    if (fixed) continue;                       // any sign is valid on a fixed variable
+    if (!atLower && !atUpper) {
+      worst = std::max(worst, std::abs(d[j])); // strictly inside: must be zero
+    } else if (atLower) {
+      worst = std::max(worst, maximise ? std::max(0.0, d[j]) : std::max(0.0, -d[j]));
+    } else {
+      worst = std::max(worst, maximise ? std::max(0.0, -d[j]) : std::max(0.0, d[j]));
+    }
+  }
+
+  // 3. Row sign conditions and complementary slackness.
+  for (std::size_t i = 0; i < m; ++i) {
+    const auto& c = originalModel.constraints[i];
+    double act = 0.0;
+    for (const auto& t : c.linearTerms) {
+      if (t.variableIndex >= 0 && static_cast<std::size_t>(t.variableIndex) < n) {
+        act += t.value * x[static_cast<std::size_t>(t.variableIndex)];
+      }
+    }
+    const bool atLower = std::isfinite(c.lowerBound) && std::abs(act - c.lowerBound) <= tol;
+    const bool atUpper = std::isfinite(c.upperBound) && std::abs(act - c.upperBound) <= tol;
+    if (atLower && atUpper) continue;          // equality row: either sign valid
+    if (!atLower && !atUpper) {
+      worst = std::max(worst, std::abs(y[i])); // slack row must be priced at zero
+    } else if (atUpper) {
+      worst = std::max(worst, maximise ? std::max(0.0, -y[i]) : std::max(0.0, y[i]));
+    } else {
+      worst = std::max(worst, maximise ? std::max(0.0, y[i]) : std::max(0.0, -y[i]));
+    }
+  }
+  return worst;
+}
+
+PostsolveResult Postsolver::process(
+    const model::Model& originalModel,
+    const presolve::PresolveResult& presolveResult,
+    const std::vector<double>& presolvedPrimalSolution,
+    const std::vector<double>& presolvedConstraintDuals) {
+  PostsolveResult result =
+      process(originalModel, presolveResult, presolvedPrimalSolution);
+  if (!result.isSuccess()) return result;
+  // An empty dual vector is the CORRECT input when presolve left no
+  // constraints -- the model was solved by presolve plus the bound walk, and
+  // every original row's price is then recovered from the transformation log
+  // alone. Only demand duals when the reduced model actually has rows.
+  const std::size_t reducedRows =
+      presolveResult.postsolve.presolvedToOriginalConstraint.size();
+  if (presolvedConstraintDuals.empty() && reducedRows > 0) {
+    result.dualsAvailable = false;
+    result.dualsUnavailableReason = "no reduced-space duals were supplied";
+    return result;
+  }
+
+  reconstructDuals(originalModel, presolveResult, presolvedConstraintDuals, result);
+  if (!result.dualsAvailable) return result;
+
+  // Publish only what actually satisfies the original model's conditions.
+  // Reporting multipliers that fail them would be worse than reporting none,
+  // because a caller has no way to tell the difference.
+  result.maxDualResidual = dualResidual(originalModel, result);
+  double scale = 1.0;
+  for (double v : result.constraintDuals) scale = std::max(scale, std::abs(v));
+  if (!(result.maxDualResidual <= tolerance_ * 100.0 * scale)) {
+    result.dualsAvailable = true;  // keep the numbers for diagnosis
+    result.dualsUnavailableReason =
+        "reconstructed multipliers violate the original model's optimality "
+        "conditions by " + std::to_string(result.maxDualResidual);
+    result.dualsAvailable = false;
+    result.constraintDuals.clear();
+    result.reducedCosts.clear();
+  }
+  return result;
 }
 
 }  // namespace postsolve
