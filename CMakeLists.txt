@@ -91,6 +91,26 @@ target_include_directories(test_postsolve PRIVATE
 target_link_libraries(test_postsolve PRIVATE postsolver)
 add_test(NAME PostsolveTests COMMAND test_postsolve)
 
+# Exercise reconstruction directly, without wiring duals into the pipeline.
+add_executable(test_postsolve_duals
+    tests/postsolve/test_dual_reconstruction.cpp
+    src/model/model.cpp
+    src/presolve/presolver.cpp
+)
+target_include_directories(test_postsolve_duals PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(test_postsolve_duals PRIVATE postsolver)
+foreach(case IN ITEMS
+    known_shadow_price derived_bound singleton_lower singleton_upper
+    singleton_equality singleton_ranged inactive_singleton reduced_costs
+    equality_dual lower_dual upper_dual fixed_variable empty_duals
+    wrong_dual_size invalid_constraint_mapping residual_gate nonfinite_duals nonfinite_reconstruction
+    quadratic_gradient quadratic_reconstruction primal_only missing_bound_provenance
+    invalid_bound_indices invalid_bound_direction invalid_source_coefficient
+    invalid_singleton_provenance provenance_after_elimination provenance_bound_history
+    derived_bound_directions)
+    add_test(NAME PostsolveDual_${case} COMMAND test_postsolve_duals ${case})
+endforeach()
+
 add_executable(test_presolve_metadata
     tests/postsolve/test_presolve_metadata.cpp
     src/model/model.cpp
