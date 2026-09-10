@@ -91,6 +91,18 @@ target_include_directories(test_postsolve PRIVATE
 target_link_libraries(test_postsolve PRIVATE postsolver)
 add_test(NAME PostsolveTests COMMAND test_postsolve)
 
+add_executable(test_presolve_metadata
+    tests/postsolve/test_presolve_metadata.cpp
+    src/model/model.cpp
+    src/presolve/presolver.cpp
+)
+target_include_directories(test_presolve_metadata PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/tests/postsolve
+)
+target_link_libraries(test_presolve_metadata PRIVATE postsolver)
+add_test(NAME test_presolve_metadata COMMAND test_presolve_metadata)
+
 # Linear programming engine. Self-contained and C++17; builds the library only.
 # Its tests and benchmark harnesses stay off here and are enabled by configuring
 # pdlp_engine/ standalone, or with -DPDLP_BUILD_TESTS=ON -DPDLP_BUILD_TOOLS=ON.
