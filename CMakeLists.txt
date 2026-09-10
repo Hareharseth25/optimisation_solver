@@ -199,6 +199,21 @@ if(NOT MSVC)
     target_compile_options(mps_reader PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+# MPS parser suite. Fixtures are referenced by paths relative to the project
+# source directory, so the test runs from there rather than from the build tree.
+# model.cpp comes in directly: the mps_reader library deliberately does not
+# carry it (it only produces a Model, never validates one), but the test asserts
+# that a parsed model passes Model::validate().
+add_executable(test_mps_reader
+    tests/mps/mps_reader_tests.cpp
+    src/model/model.cpp
+)
+target_link_libraries(test_mps_reader PRIVATE mps_reader)
+add_test(NAME test_mps_reader
+    COMMAND test_mps_reader
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+)
+
 # End-to-end: model in, solution out, through every layer in the real order.
 add_executable(test_end_to_end tests/pipeline/test_end_to_end.cpp)
 target_link_libraries(test_end_to_end PRIVATE solver_orchestrator)
