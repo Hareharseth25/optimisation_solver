@@ -91,6 +91,9 @@ private:
     // section is read, so a file that orders RANGES before RHS still produces
     // the same model.
     std::unordered_map<std::string, RowSense> row_senses_;
+    // RHS and RANGES independently select the first named vector.
+    std::string selected_rhs_vector_;
+    std::string selected_ranges_vector_;
     std::vector<double> row_rhs_;
     std::vector<double> row_range_;
     std::vector<char> row_has_range_;

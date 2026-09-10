@@ -358,6 +358,76 @@ void test_rejects_sos() {
               << std::endl;
 }
 
+// Use runtime checks so these regressions also run in Release builds.
+static void require(bool condition, const std::string& message) {
+    if (!condition) throw std::runtime_error(message);
+}
+
+void test_first_vectors() {
+    mps::MpsReader reader;
+    auto m = reader.read("tests/mps/test_cases/17_multiple_rhs.mps");
+    require(rowNamed(m, "C1").upperBound == 10, "later RHS overwrote first vector");
+    require(rowNamed(m, "C2").lowerBound == 5, "first RHS continuation was ignored");
+    require(rowNamed(m, "C3").upperBound == 0, "later RHS supplied an absent entry");
+    require(m.objective.offset == 25, "later RHS overwrote objective constant");
+    require(!reader.warnings().empty(), "ignored RHS vectors need a warning");
+
+    // Reuse the reader: vector selection must reset, and the first RANGES name
+    // is independent of the first RHS name even when RANGES comes first.
+    m = reader.read("tests/mps/test_cases/18_multiple_ranges.mps");
+    require(rowNamed(m, "C1").lowerBound == 6 && rowNamed(m, "C1").upperBound == 10,
+            "first RANGES/RHS vectors must determine the L row");
+    require(rowNamed(m, "C2").lowerBound == 5 && rowNamed(m, "C2").upperBound == 8,
+            "first RANGES continuation must determine the G row");
+    require(std::isinf(rowNamed(m, "C3").lowerBound) &&
+            rowNamed(m, "C3").upperBound == 8, "later RANGES supplied an absent entry");
+    bool warnedRanges = false;
+    for (const auto& warning : reader.warnings())
+        warnedRanges |= warning.find("RANGES vector 'RANGE_B'") != std::string::npos;
+    require(warnedRanges, "ignored RANGES vectors need a warning");
+    m = reader.read("tests/mps/test_cases/07_ranges.mps");
+    require(rowNamed(m, "C1").lowerBound == 6, "RANGES selection did not reset");
+    std::cout << "[PASS] First RHS/RANGES vectors, independent selection and reader reset\n";
+}
+
+void test_marker_fields() {
+    mps::MpsReader reader;
+    const auto m = reader.read("tests/mps/test_cases/19_marker_names.mps");
+    require(m.variables.size() == 5, "marker-like variable names were consumed as records");
+    for (const auto& name : {"X_MARKER_INTORG", "MARKER", "X", "CONT_MARKER_INTORG"})
+        require(varNamed(m, name).type == model::VariableType::Continuous,
+                std::string("ordinary column changed marker state: ") + name);
+    require(varNamed(m, "INTEGER_MARKER_INTEND").type == model::VariableType::Integer,
+            "quoted marker fields must control integrality");
+    require(rowNamed(m, "C1").linearTerms.size() == 4, "column coefficients were dropped");
+    require(rowNamed(m, "MARKER").linearTerms.size() == 1 &&
+            rowNamed(m, "MARKER").linearTerms[0].value == 5,
+            "a row named MARKER with a numeric coefficient is not a marker record");
+    std::cout << "[PASS] Marker detection uses fields, not substrings\n";
+}
+
+void test_integral_bound_values() {
+    mps::MpsReader reader;
+    const auto m = reader.read("tests/mps/test_cases/22_integral_bounds.mps");
+    require(varNamed(m, "X").type == model::VariableType::Integer &&
+            varNamed(m, "X").lowerBound == -2 && varNamed(m, "X").upperBound == 9,
+            "integral LI/UI bounds must accept signed, decimal and exponent notation");
+    require(varNamed(m, "Y").type == model::VariableType::Integer &&
+            varNamed(m, "Y").lowerBound == 0 && varNamed(m, "Y").upperBound == 0,
+            "zero LI/UI bounds are integral");
+    for (const auto& bound : {std::make_pair("20_fractional_li.mps", "LI"),
+                              std::make_pair("21_fractional_ui.mps", "UI")}) {
+        std::string message;
+        require(readThrows(std::string("tests/mps/test_cases/") + bound.first, message),
+                std::string("fractional ") + bound.second + " was accepted");
+        require(message.find("line 7") != std::string::npos &&
+                message.find(bound.second) != std::string::npos &&
+                message.find("integral value") != std::string::npos,
+                "fractional bound error must identify its line and bound type: " + message);
+    }
+    std::cout << "[PASS] LI/UI require integral values with line-numbered errors\n";
+}
+
 int main() {
     std::cout << "--- Running MPS Reader Test Suite ---" << std::endl;
     test_basic_lp();
@@ -374,6 +444,9 @@ int main() {
     test_quadratic_objective();
     test_rejects_unknown_section();
     test_rejects_sos();
+    test_first_vectors();
+    test_marker_fields();
+    test_integral_bound_values();
     std::cout << "All MPS parser tests completed successfully!" << std::endl;
     return 0;
 }

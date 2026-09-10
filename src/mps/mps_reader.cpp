@@ -41,6 +41,8 @@ void MpsReader::reset() {
     var_name_to_idx_.clear();
     constraint_name_to_idx_.clear();
     row_senses_.clear();
+    selected_rhs_vector_.clear();
+    selected_ranges_vector_.clear();
     row_rhs_.clear();
     row_range_.clear();
     row_has_range_.clear();
@@ -220,14 +222,14 @@ model::Model MpsReader::read(const std::string& filepath) {
                 // Integer markers:
                 //   MARKER_NAME  'MARKER'  'INTORG'
                 // The name field is arbitrary, so detect on the keywords.
-                const std::string upper = toUpper(line);
-                if (upper.find("MARKER") != std::string::npos) {
-                    if (upper.find("INTORG") != std::string::npos) {
-                        integer_marker_active_ = true;
-                        break;
-                    }
-                    if (upper.find("INTEND") != std::string::npos) {
-                        integer_marker_active_ = false;
+                std::istringstream markerFields(line);
+                std::string markerName, markerToken, markerKind;
+                if (markerFields >> markerName >> markerToken >> markerKind) {
+                    markerToken = toUpper(unquote(markerToken));
+                    markerKind = toUpper(unquote(markerKind));
+                    if (markerToken == "MARKER" &&
+                        (markerKind == "INTORG" || markerKind == "INTEND")) {
+                        integer_marker_active_ = markerKind == "INTORG";
                         break;
                     }
                 }
@@ -256,8 +258,14 @@ model::Model MpsReader::read(const std::string& filepath) {
             }
 
             case MpsSection::RHS: {
-                // Field 1 is the RHS vector's name, which carries no meaning
-                // here; the (row, value) pairs follow.
+                // Keep all records belonging to the first RHS vector only,
+                // including its objective constant. Other vectors are alternatives.
+                if (selected_rhs_vector_.empty()) selected_rhs_vector_ = token;
+                if (token != selected_rhs_vector_) {
+                    warn("RHS vector '" + token + "' ignored; using first vector '" +
+                         selected_rhs_vector_ + "'");
+                    break;
+                }
                 std::string row_name;
                 double value = 0.0;
                 int pairs = 0;
@@ -298,6 +306,12 @@ model::Model MpsReader::read(const std::string& filepath) {
             }
 
             case MpsSection::RANGES: {
+                if (selected_ranges_vector_.empty()) selected_ranges_vector_ = token;
+                if (token != selected_ranges_vector_) {
+                    warn("RANGES vector '" + token + "' ignored; using first vector '" +
+                         selected_ranges_vector_ + "'");
+                    break;
+                }
                 std::string row_name;
                 double value = 0.0;
 
@@ -346,6 +360,12 @@ model::Model MpsReader::read(const std::string& filepath) {
                 if (needsValue && !(ss >> value)) {
                     fail("bound type '" + bound_type + "' on column '" + var_name +
                          "' requires a value", lineNumber);
+                }
+
+                if ((bound_type == "LI" || bound_type == "UI") &&
+                    (!std::isfinite(value) || std::trunc(value) != value)) {
+                    fail("bound type '" + bound_type + "' on column '" + var_name +
+                         "' requires an integral value", lineNumber);
                 }
 
                 if (bound_type == "LO") {
