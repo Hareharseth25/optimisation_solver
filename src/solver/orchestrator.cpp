@@ -333,6 +333,68 @@ const char* toString(SolveStatus value) noexcept {
     return "unknown";
 }
 
+SolveResult solveReduced(const model::Model& presolvedModel,
+                         const Classification& classification,
+                         const SolverOptions& options) {
+    const Clock::time_point start = Clock::now();
+    SolveResult result;
+
+    if (!presolvedModel.validate()) {
+        result.status = SolveStatus::InvalidModel;
+        result.message = "model failed structural validation";
+        result.solveSeconds = secondsSince(start);
+        return result;
+    }
+
+    presolve::PresolveResult presolved;
+    presolved.model = presolvedModel;
+
+    const DispatchDecision decision =
+        dispatch(presolvedModel, classification, presolved, options);
+    result.engine = decision.engine;
+    result.engineReason = decision.reason;
+
+    switch (decision.engine) {
+        case Engine::Infeasible:
+            result.status = SolveStatus::Infeasible;
+            result.message = decision.reason;
+            break;
+
+        case Engine::Trivial:
+            result = solveTrivially(presolvedModel, std::move(result));
+            break;
+
+        case Engine::Unsupported:
+            result.status = SolveStatus::Unsupported;
+            result.message = decision.reason;
+            break;
+
+        case Engine::BranchAndCut:
+            result = runBranchAndCut(presolvedModel, options, std::move(result));
+            break;
+
+        case Engine::Qp:
+            result = runQp(presolvedModel, options, std::move(result));
+            break;
+
+        case Engine::DualSimplex:
+            result = runDualSimplex(presolvedModel, options, std::move(result));
+            break;
+
+        case Engine::Pdlp:
+            result = runPdlp(presolvedModel, options, std::move(result));
+            break;
+    }
+
+    result.reducedVariableCount = presolvedModel.variables.size();
+    result.reducedConstraintCount = presolvedModel.constraints.size();
+    result.maxIntegralityViolation =
+        integralityViolation(presolvedModel, result.variableValues);
+    result.integralityRespected = result.maxIntegralityViolation <= 1e-5;
+    result.solveSeconds = secondsSince(start);
+    return result;
+}
+
 SolveResult solve(const model::Model& model, const SolverOptions& options) {
     const Clock::time_point start = Clock::now();
     SolveResult result;
@@ -347,53 +409,24 @@ SolveResult solve(const model::Model& model, const SolverOptions& options) {
     // 1. Classify the ORIGINAL model. Presolve's reductions depend on the class.
     const Classification classification = classify(model);
 
-    // 2. Presolve.
+    // 2. Presolve ONCE.
     presolve::Presolver presolver;
     const presolve::PresolveResult presolved = presolver.run(model);
 
-    // 3. Dispatch on the REDUCED model.
-    const DispatchDecision decision =
-        dispatch(presolved.model, classification, presolved, options);
-    result.engine = decision.engine;
-    result.engineReason = decision.reason;
-
-    switch (decision.engine) {
-        case Engine::Infeasible:
-            result.status = SolveStatus::Infeasible;
-            result.message = decision.reason;
-            break;
-
-        case Engine::Trivial:
-            result = solveTrivially(presolved.model, std::move(result));
-            break;
-
-        case Engine::Unsupported:
-            result.status = SolveStatus::Unsupported;
-            result.message = decision.reason;
-            break;
-
-        case Engine::BranchAndCut:
-            result = runBranchAndCut(presolved.model, options, std::move(result));
-            break;
-
-        case Engine::Qp:
-            result = runQp(presolved.model, options, std::move(result));
-            break;
-
-        case Engine::DualSimplex:
-            result = runDualSimplex(presolved.model, options, std::move(result));
-            break;
-
-        case Engine::Pdlp:
-            result = runPdlp(presolved.model, options, std::move(result));
-            break;
+    if (presolved.infeasible) {
+        result.status = SolveStatus::Infeasible;
+        result.engine = Engine::Infeasible;
+        result.executedEngine = Engine::Unsupported;
+        result.engineReason = "presolve proved the model infeasible";
+        result.message = "presolve proved the model infeasible";
+        result.reducedVariableCount = presolved.model.variables.size();
+        result.reducedConstraintCount = presolved.model.constraints.size();
+        result.solveSeconds = secondsSince(start);
+        return result;
     }
 
-    result.reducedVariableCount = presolved.model.variables.size();
-    result.reducedConstraintCount = presolved.model.constraints.size();
-    result.maxIntegralityViolation =
-        integralityViolation(presolved.model, result.variableValues);
-    result.integralityRespected = result.maxIntegralityViolation <= 1e-5;
+    // 3. Solve the reduced model using solveReduced with original classification.
+    result = solveReduced(presolved.model, classification, options);
     result.solveSeconds = secondsSince(start);
     return result;
 }
