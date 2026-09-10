@@ -4,8 +4,6 @@
 
 #include "model/model.h"
 #include "mps/mps_reader.h"
-#include "presolve/presolver.h"
-#include "postsolve/postsolver.h"
 #include "solver/orchestrator.h"
 
 #include <fstream>
@@ -49,38 +47,7 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err) {
             return 1;
         }
 
-        // 3. Classify original model
-        const solver::Classification classification = solver::classify(model);
-
-        // 4. Presolve
-        presolve::Presolver presolver;
-        presolve::PresolveResult presolveResult;
-        try {
-            presolveResult = presolver.run(model);
-        } catch (const std::exception& ex) {
-            printError(err, "Presolve failed", ex.what());
-            return 1;
-        }
-
-        if (presolveResult.infeasible) {
-            TerminalStyle style = TerminalStyle::forStream(out);
-            SolveDashboardInfo dash;
-            dash.problemName = model.name;
-            dash.originalVars = model.variables.size();
-            dash.originalCons = model.constraints.size();
-            dash.presolveInfeasible = true;
-            dash.engineName = "presolve";
-            printSolveDashboard(out, dash, style);
-
-            SolveResultInfo resInfo;
-            resInfo.status = solver::SolveStatus::Infeasible;
-            resInfo.engine = "presolve";
-            resInfo.message = "Presolve proved the model infeasible";
-            printSolveResult(out, resInfo, style);
-            return 0;
-        }
-
-        // 5. Configure solver options
+        // 3. Configure solver options
         solver::SolverOptions solverOptions;
         if (opts.solver.has_value()) {
             solverOptions.forceEngine = solver::parseEngine(*opts.solver);
@@ -89,10 +56,10 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err) {
             solverOptions.timeLimitSeconds = *opts.timeLimitSeconds;
         }
 
-        // 6. Solve the reduced model
+        // 4. Run the common pipeline, including original-model reconstruction
         solver::SolveResult solveResult;
         try {
-            solveResult = solver::solveReduced(presolveResult.model, classification, solverOptions);
+            solveResult = solver::solve(model, solverOptions);
         } catch (const std::exception& ex) {
             printError(err, "Solver failed", ex.what());
             return 1;
@@ -111,41 +78,7 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err) {
             return 1;
         }
 
-        // 7. Handle Infeasible / Unbounded from engine
-        if (solveResult.status == solver::SolveStatus::Infeasible ||
-            solveResult.status == solver::SolveStatus::Unbounded) {
-            TerminalStyle style = TerminalStyle::forStream(out);
-            SolveDashboardInfo dash;
-            dash.problemName = model.name;
-            dash.originalVars = model.variables.size();
-            dash.originalCons = model.constraints.size();
-            dash.reducedVars = solveResult.reducedVariableCount;
-            dash.reducedCons = solveResult.reducedConstraintCount;
-            dash.engineName = solver::toString(solveResult.executedEngine);
-            printSolveDashboard(out, dash, style);
-
-            SolveResultInfo resInfo;
-            resInfo.status = solveResult.status;
-            resInfo.engine = solver::toString(solveResult.executedEngine);
-            resInfo.message = solveResult.message;
-            resInfo.iterations = solveResult.iterations;
-            resInfo.nodeCount = solveResult.nodeCount;
-            resInfo.solveSeconds = solveResult.solveSeconds;
-            printSolveResult(out, resInfo, style);
-            return 0;
-        }
-
-        // 8. For Optimal or LimitReached, run postsolve
-        postsolve::Postsolver postsolver;
-        postsolve::PostsolveResult postsolveResult =
-            postsolver.process(model, presolveResult, solveResult.variableValues);
-
-        if (!postsolveResult.isSuccess()) {
-            printError(err, "Postsolve error", postsolveResult.errorMessage);
-            return 1;
-        }
-
-        // 9. Output solve dashboard and summary
+        // 5. Output solve dashboard and summary
         TerminalStyle style = TerminalStyle::forStream(out);
         SolveDashboardInfo dash;
         dash.problemName = model.name;
@@ -153,21 +86,42 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err) {
         dash.originalCons = model.constraints.size();
         dash.reducedVars = solveResult.reducedVariableCount;
         dash.reducedCons = solveResult.reducedConstraintCount;
-        dash.engineName = solver::toString(solveResult.executedEngine);
+        dash.presolveInfeasible = solveResult.engine == solver::Engine::Infeasible;
+        dash.engineName = dash.presolveInfeasible ? "presolve"
+                                                : solver::toString(solveResult.executedEngine);
         printSolveDashboard(out, dash, style);
 
         SolveResultInfo resInfo;
         resInfo.status = solveResult.status;
-        resInfo.objective = postsolveResult.originalObjectiveValue;
-        resInfo.hasObjective = true;
-        resInfo.engine = solver::toString(solveResult.executedEngine);
+        resInfo.objective = solveResult.objectiveValue;
+        resInfo.hasObjective = solveResult.hasPrimal;
+        resInfo.engine = dash.engineName;
         resInfo.iterations = solveResult.iterations;
         resInfo.nodeCount = solveResult.nodeCount;
         resInfo.solveSeconds = solveResult.solveSeconds;
         resInfo.message = solveResult.message;
         printSolveResult(out, resInfo, style);
 
-        // 10. Write solution file if requested
+        if (!solveResult.hasPrimal) {
+            if (solveResult.status == solver::SolveStatus::LimitReached) {
+                out << "  No feasible solution available.\n";
+                if (opts.outputPath.has_value()) {
+                    printError(err, "Output unavailable", "No feasible solution was found to write.");
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        if (solveResult.hasDuals) {
+            out << "  Duals available: " << solveResult.constraintDuals.size()
+                << " shadow prices, " << solveResult.reducedCosts.size() << " reduced costs\n";
+        } else {
+            out << "  Duals unavailable: " << solveResult.dualsUnavailableReason << "\n";
+        }
+        if (!solveResult.integralityRespected)
+            out << "  Continuous relaxation; returned values are not integer-feasible.\n";
+
+        // 6. Write original-model values and sensitivities if requested
         if (opts.outputPath.has_value()) {
             std::ofstream outFile(*opts.outputPath);
             if (!outFile.is_open()) {
@@ -177,10 +131,24 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err) {
 
             outFile << "# Solution for " << (model.name.empty() ? "model" : model.name) << "\n";
             outFile << "# Status: " << solver::toString(solveResult.status) << "\n";
-            outFile << "# Objective: " << std::setprecision(9) << postsolveResult.originalObjectiveValue << "\n";
+            outFile << "# Objective: " << std::setprecision(9) << solveResult.objectiveValue << "\n";
             for (std::size_t i = 0; i < model.variables.size(); ++i) {
                 const std::string& name = model.variables[i].name.empty() ? ("x" + std::to_string(i)) : model.variables[i].name;
-                outFile << name << " " << std::setprecision(9) << postsolveResult.primalSolution[i] << "\n";
+                outFile << name << " " << std::setprecision(9) << solveResult.variableValues[i] << "\n";
+            }
+            if (solveResult.hasDuals) {
+                for (std::size_t i = 0; i < model.constraints.size(); ++i) {
+                    const auto name = model.constraints[i].name.empty()
+                        ? "c" + std::to_string(i) : model.constraints[i].name;
+                    outFile << "# Dual " << name << " " << solveResult.constraintDuals[i] << "\n";
+                }
+                for (std::size_t j = 0; j < model.variables.size(); ++j) {
+                    const auto name = model.variables[j].name.empty()
+                        ? "x" + std::to_string(j) : model.variables[j].name;
+                    outFile << "# Reduced cost " << name << " " << solveResult.reducedCosts[j] << "\n";
+                }
+            } else {
+                outFile << "# Duals unavailable: " << solveResult.dualsUnavailableReason << "\n";
             }
             outFile.close();
             if (!outFile) {

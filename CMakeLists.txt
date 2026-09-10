@@ -183,6 +183,7 @@ target_link_libraries(solver_orchestrator PUBLIC
     pdlp_adapter
     milp_engine
     qp_engine
+    postsolver
 )
 target_compile_features(solver_orchestrator PUBLIC cxx_std_17)
 if(NOT MSVC)
@@ -203,6 +204,13 @@ endif()
 add_executable(test_end_to_end tests/pipeline/test_end_to_end.cpp)
 target_link_libraries(test_end_to_end PRIVATE solver_orchestrator)
 add_test(NAME test_end_to_end COMMAND test_end_to_end)
+
+add_executable(test_postsolve_integration tests/pipeline/test_postsolve_integration.cpp)
+target_link_libraries(test_postsolve_integration PRIVATE solver_orchestrator)
+foreach(case IN ITEMS lp_engines qp_signs all_eliminated bound_only integer_models
+    unavailable_duals failure_statuses limit_no_solution limit_feasible_solution)
+    add_test(NAME PostsolveIntegration_${case} COMMAND test_postsolve_integration ${case})
+endforeach()
 
 # Pins the Model quadratic convention through the public solve API: a
 # diagonal q_ii must reach the engine as P_ii = 2*q_ii and an off-diagonal

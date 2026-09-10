@@ -7,10 +7,13 @@
 #include "qp/qp_adapter.h"
 #include "qp/qp_solver.h"
 #include "presolve/presolver.h"
+#include "postsolve/postsolver.h"
 
+#include <algorithm>
 #include <chrono>
 #include <stdexcept>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 namespace solver {
@@ -83,6 +86,77 @@ double integralityViolation(const model::Model& model,
     return worst;
 }
 
+// Apply the same publication rules to both API entry points. For solveReduced,
+// metadata is an identity map; solve uses the actual presolve transformation log.
+SolveResult reconstructResult(const model::Model& original,
+                              const presolve::PresolveResult& presolved,
+                              SolveResult result, const SolverOptions& options) {
+    const auto clearSolution = [&]() {
+        result.hasPrimal = false;
+        result.variableValues.clear();
+        result.objectiveValue = 0.0;
+        result.hasDuals = false;
+        result.constraintDuals.clear();
+        result.reducedCosts.clear();
+    };
+    if (result.status != SolveStatus::Optimal && result.status != SolveStatus::LimitReached) {
+        clearSolution();
+        result.dualsUnavailableReason = "No optimal solution is available.";
+        return result;
+    }
+    if (result.variableValues.size() != presolved.presolvedVariables) {
+        if (result.status == SolveStatus::Optimal) {
+            result.status = SolveStatus::NumericalFailure;
+            result.message = "Engine returned an incomplete primal solution.";
+        }
+        clearSolution();
+        result.dualsUnavailableReason = "No complete primal solution is available.";
+        return result;
+    }
+
+    const bool integerModel = std::any_of(original.variables.begin(), original.variables.end(),
+        [](const model::Variable& v) { return v.type != model::VariableType::Continuous; });
+    const bool wantDuals = result.status == SolveStatus::Optimal && !integerModel && result.hasDuals;
+    // Preserve explicit forced-relaxation behavior: validate its continuous point,
+    // but report integrality against the ORIGINAL types and never publish MILP duals.
+    model::Model relaxation;
+    const model::Model* validationModel = &original;
+    if (integerModel && result.executedEngine != Engine::BranchAndCut &&
+        result.executedEngine != Engine::Trivial) {
+        relaxation = original;
+        for (auto& v : relaxation.variables) v.type = model::VariableType::Continuous;
+        validationModel = &relaxation;
+    }
+    const double tolerance = std::max(postsolve::DEFAULT_POSTSOLVE_TOLERANCE, options.tolerance);
+    postsolve::Postsolver postsolver(tolerance);
+    auto post = wantDuals
+        ? postsolver.process(*validationModel, presolved, result.variableValues, result.constraintDuals)
+        : postsolver.process(*validationModel, presolved, result.variableValues);
+    if (!post.isSuccess() || !std::isfinite(post.originalObjectiveValue)) {
+        if (result.status == SolveStatus::Optimal) result.status = SolveStatus::NumericalFailure;
+        result.message += "; postsolve: " + (post.isSuccess()
+            ? std::string("Non-finite original objective.") : post.errorMessage);
+        clearSolution();
+        result.dualsUnavailableReason = "No valid primal solution is available.";
+        return result;
+    }
+
+    result.hasPrimal = true;
+    result.variableValues = std::move(post.primalSolution);
+    result.objectiveValue = post.originalObjectiveValue;
+    result.maxIntegralityViolation = integralityViolation(original, result.variableValues);
+    result.integralityRespected = result.maxIntegralityViolation <= tolerance;
+    result.hasDuals = wantDuals && post.dualsAvailable;
+    result.constraintDuals = std::move(post.constraintDuals);
+    result.reducedCosts = std::move(post.reducedCosts);
+    result.maxDualResidual = post.maxDualResidual;
+    if (wantDuals) result.dualsUnavailableReason = std::move(post.dualsUnavailableReason);
+    else if (integerModel) result.dualsUnavailableReason = "Dual sensitivities are unavailable for integer models.";
+    else if (result.status != SolveStatus::Optimal)
+        result.dualsUnavailableReason = "Dual sensitivities require an optimal solution.";
+    return result;
+}
+
 // No constraints remain, so the variables no longer interact: each one moves to
 // whichever of its own bounds improves the objective. Returning just the
 // objective offset here -- as an earlier version did -- silently reported the
@@ -139,8 +213,9 @@ SolveResult solveTrivially(const model::Model& reduced, SolveResult result) {
     result.status = SolveStatus::Optimal;
     result.objectiveValue = objective;
     result.executedEngine = Engine::Trivial;
-    // Every remaining constraint was removed, so there are no prices to report.
-    result.hasDuals = false;
+    // No row multipliers are needed. An empty vector is a complete dual input;
+    // postsolve can still reconstruct removed rows and bound reduced costs.
+    result.hasDuals = true;
     return result;
 }
 
@@ -173,7 +248,10 @@ SolveResult runPdlp(const model::Model& reduced, const SolverOptions& options,
     result.message = raw.statusMessage;
     result.variableValues = solution.variableValues;
     result.constraintDuals = solution.constraintDuals;
-    result.hasDuals = !result.constraintDuals.empty();
+    // The adapter can zero-fill missing rows. Only accept an actual complete
+    // engine vector as evidence that multipliers were supplied.
+    result.hasDuals = raw.rowDual.size() == reduced.constraints.size() &&
+                      result.constraintDuals.size() == reduced.constraints.size();
     result.objectiveValue = solution.objectiveValue;
     result.iterations = raw.iterations;
     return result;
@@ -245,7 +323,7 @@ SolveResult runDualSimplex(const model::Model& reduced, const SolverOptions& opt
     // Empty for Infeasible/Unbounded, where there is no basis to price from.
     if (raw.dual.size() == reduced.constraints.size()) {
         result.constraintDuals = raw.dual;
-        result.hasDuals = !raw.dual.empty();
+        result.hasDuals = true;
     }
     return result;
 }
@@ -286,13 +364,17 @@ SolveResult runQp(const model::Model& reduced, const SolverOptions& options,
     // The QP adapter appends one identity row per bounded variable, so the dual
     // vector is longer than the model's constraint list. Report only the
     // multipliers that correspond to real constraints; the trailing entries are
-    // reduced costs on the variable bounds, which SolveResult has no field for.
+    // bound multipliers; reduced costs are recomputed using the Model gradient.
     const std::size_t rows = reduced.constraints.size();
     if (raw.constraintDual.size() >= rows) {
         result.constraintDuals.assign(raw.constraintDual.begin(),
                                       raw.constraintDual.begin() +
                                           static_cast<std::ptrdiff_t>(rows));
-        result.hasDuals = rows > 0;
+        // ADMM uses grad + A^T y = 0. Convert to shadow prices, undoing
+        // the objective negation for maximization exactly once.
+        const double sign = translation.objectiveNegated ? 1.0 : -1.0;
+        for (double& dual : result.constraintDuals) dual *= sign;
+        result.hasDuals = true;
     }
     return result;
 }
@@ -388,9 +470,19 @@ SolveResult solveReduced(const model::Model& presolvedModel,
 
     result.reducedVariableCount = presolvedModel.variables.size();
     result.reducedConstraintCount = presolvedModel.constraints.size();
-    result.maxIntegralityViolation =
-        integralityViolation(presolvedModel, result.variableValues);
-    result.integralityRespected = result.maxIntegralityViolation <= 1e-5;
+    presolved.originalVariables = presolved.presolvedVariables = presolvedModel.variables.size();
+    presolved.originalConstraints = presolved.presolvedConstraints = presolvedModel.constraints.size();
+    presolved.postsolve.initialObjectiveOffset = presolvedModel.objective.offset;
+    presolved.postsolve.presolvedObjectiveOffset = presolvedModel.objective.offset;
+    for (std::size_t j = 0; j < presolvedModel.variables.size(); ++j) {
+        presolved.postsolve.presolvedToOriginalVar.push_back(j);
+        presolved.postsolve.originalToPresolvedVar.push_back(static_cast<int>(j));
+    }
+    for (std::size_t i = 0; i < presolvedModel.constraints.size(); ++i) {
+        presolved.postsolve.presolvedToOriginalConstraint.push_back(i);
+        presolved.postsolve.originalToPresolvedConstraint.push_back(static_cast<int>(i));
+    }
+    result = reconstructResult(presolvedModel, presolved, std::move(result), options);
     result.solveSeconds = secondsSince(start);
     return result;
 }
@@ -427,6 +519,8 @@ SolveResult solve(const model::Model& model, const SolverOptions& options) {
 
     // 3. Solve the reduced model using solveReduced with original classification.
     result = solveReduced(presolved.model, classification, options);
+    // Do not skip empty vectors: presolve may have eliminated every variable.
+    result = reconstructResult(model, presolved, std::move(result), options);
     result.solveSeconds = secondsSince(start);
     return result;
 }
