@@ -267,6 +267,7 @@ add_executable(optimsolver
     cli/main.cpp
 )
 target_link_libraries(optimsolver PRIVATE optimsolver_cli)
+install(TARGETS optimsolver RUNTIME DESTINATION bin)
 
 add_executable(test_cli
     tests/cli/test_cli.cpp

@@ -162,4 +162,4 @@ The orchestrator classifies the original model once, runs presolve once, and pas
 | **Presolve** | Fixed variables, Singleton equality/inequality, Bound tightening with provenance, Redundant rows | Variable substitution, Binary probing, Duplicate row/column detection |
 | **Engines** | PDLP (First-Order LP), Dual Simplex, Branch-and-Cut (MILP), ADMM (QP) | Infeasible interior-point barrier solver |
 | **Postsolve** | Full primal reconstruction, Objective re-evaluation, Dual reconstruction (shadow prices & reduced costs), Bound provenance validation, Fail-closed error handling | Support for dual reconstruction through variable substitution passes |
-| **CLI & UX** | Help screens, Mascot banner, Solve dashboard, Output file export, TTY auto-detection | Real-time solve progression streaming |
+| **CLI & UX** | Interactive menu, Batch solve mode, Mascot banner, Solve dashboard, Solution export, TTY detection, CMake install | Real-time solve progression streaming |

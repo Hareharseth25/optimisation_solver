@@ -9,7 +9,8 @@ namespace cli {
 enum class Command {
     None,
     Help,
-    Solve
+    Solve,
+    Interactive
 };
 
 struct SolveOptions {
@@ -35,9 +36,9 @@ public:
     static ParseResult parse(int argc, const char* const argv[]);
     static std::string getRootHelp();
     static std::string getSolveHelp();
+    static bool isValidSolverName(const std::string& name);
 
 private:
-    static bool isValidSolverName(const std::string& name);
 };
 
 }  // namespace cli

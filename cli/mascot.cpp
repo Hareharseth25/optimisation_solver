@@ -78,14 +78,84 @@ std::string TerminalStyle::boldRed() const {
     return color ? "\033[1;31m" : "";
 }
 
-void printMascot(std::ostream& out, const TerminalStyle& s) {
+std::size_t visualWidth(const std::string& str) {
+    std::size_t width = 0;
+    for (std::size_t i = 0; i < str.size(); ++i) {
+        unsigned char c = static_cast<unsigned char>(str[i]);
+        if ((c & 0xC0) != 0x80) {
+            ++width;
+        }
+    }
+    return width;
+}
+
+std::string formatNumber(std::int64_t n) {
+    std::string s = std::to_string(std::abs(n));
+    std::string res;
+    int count = 0;
+    for (int i = static_cast<int>(s.size()) - 1; i >= 0; --i) {
+        res.push_back(s[i]);
+        if (++count % 3 == 0 && i > 0) {
+            res.push_back(',');
+        }
+    }
+    if (n < 0) res.push_back('-');
+    std::reverse(res.begin(), res.end());
+    return res;
+}
+
+void printMascot(std::ostream& out, const TerminalStyle& s, MascotState state) {
+    std::string eyeMotif = "◈   ◈";
+    std::string eyeColor = s.boldCyan();
+    std::string mouthMotif = "min f(x)";
+    std::string mouthColor = s.bold();
+
+    switch (state) {
+        case MascotState::Idle:
+            eyeMotif = "◈   ◈";
+            eyeColor = s.boldCyan();
+            mouthMotif = "min f(x)";
+            mouthColor = s.bold();
+            break;
+        case MascotState::Loading:
+            eyeMotif = "◐   ◑";
+            eyeColor = s.boldYellow();
+            mouthMotif = "reading ";
+            mouthColor = s.yellow();
+            break;
+        case MascotState::Presolving:
+            eyeMotif = "◇   ◇";
+            eyeColor = s.boldCyan();
+            mouthMotif = "presolve";
+            mouthColor = s.cyan();
+            break;
+        case MascotState::Solving:
+            eyeMotif = "◉   ◉";
+            eyeColor = s.boldYellow();
+            mouthMotif = "solving ";
+            mouthColor = s.boldYellow();
+            break;
+        case MascotState::Success:
+            eyeMotif = "^   ^";
+            eyeColor = s.boldGreen();
+            mouthMotif = " ✓ opt  ";
+            mouthColor = s.boldGreen();
+            break;
+        case MascotState::Error:
+            eyeMotif = "×   ×";
+            eyeColor = s.boldRed();
+            mouthMotif = " ! err  ";
+            mouthColor = s.boldRed();
+            break;
+    }
+
     out << "        " << s.boldCyan() << "(x)" << s.dim() << "───" << s.boldCyan() << "(y)" << s.reset() << "       \n";
     out << "         " << s.dim() << "│  " << s.boldCyan() << "∇" << s.dim() << "  │" << s.reset() << "        "
         << s.boldCyan() << "OPTIMSOLVER" << s.reset() << "\n";
     out << "       " << s.dim() << "╭─┴─────┴─╮" << s.reset() << "      "
         << s.dim() << "Mathematical Optimization Engine" << s.reset() << "\n";
-    out << "       " << s.dim() << "│  " << s.boldCyan() << "◈   ◈" << s.dim() << "  │" << s.reset() << "      \n";
-    out << "       " << s.dim() << "│ " << s.bold() << "min f(x)" << s.dim() << "│" << s.reset() << "      "
+    out << "       " << s.dim() << "│  " << eyeColor << eyeMotif << s.dim() << "  │" << s.reset() << "      \n";
+    out << "       " << s.dim() << "│ " << mouthColor << mouthMotif << s.dim() << "│" << s.reset() << "      "
         << s.dim() << "Problem Families:  " << s.reset()
         << s.bold() << "LP" << s.reset() << " " << s.dim() << "·" << s.reset() << " "
         << s.bold() << "QP" << s.reset() << " " << s.dim() << "·" << s.reset() << " "
@@ -101,13 +171,13 @@ void printMascot(std::ostream& out, const TerminalStyle& s) {
 
 void printBanner(std::ostream& out) {
     TerminalStyle s = TerminalStyle::forStream(out);
-    printMascot(out, s);
+    printMascot(out, s, MascotState::Idle);
     out << "\n";
 }
 
 void printWelcome(std::ostream& out) {
     TerminalStyle s = TerminalStyle::forStream(out);
-    printMascot(out, s);
+    printMascot(out, s, MascotState::Idle);
     out << "\n";
     out << s.bold() << "Getting Started" << s.reset() << "\n";
     out << "  optimsolver solve <model.mps>\n\n";
@@ -120,7 +190,7 @@ void printWelcome(std::ostream& out) {
 
 void printSolveHelp(std::ostream& out) {
     TerminalStyle s = TerminalStyle::forStream(out);
-    printMascot(out, s);
+    printMascot(out, s, MascotState::Idle);
     out << "\n";
     out << s.bold() << "Usage" << s.reset() << "\n";
     out << "  optimsolver solve <model.mps> [options]\n\n";
@@ -136,6 +206,88 @@ void printSolveHelp(std::ostream& out) {
     out << "  optimsolver solve model.mps\n";
     out << "  optimsolver solve model.mps --solver dual_simplex\n";
     out << "  optimsolver solve model.mps --time-limit 60 --output solution.txt\n";
+}
+
+void printHeaderBox(std::ostream& out, const std::string& title, const TerminalStyle& s, int width) {
+    std::string topBorder = s.dim() + "╭";
+    for (int i = 0; i < width - 2; ++i) topBorder += "─";
+    topBorder += "╮" + s.reset();
+
+    std::string botBorder = s.dim() + "╰";
+    for (int i = 0; i < width - 2; ++i) botBorder += "─";
+    botBorder += "╯" + s.reset();
+
+    out << topBorder << "\n";
+    std::string titleStr = "  " + title;
+    int pad = width - 2 - static_cast<int>(visualWidth(titleStr));
+    out << s.dim() << "│" << s.reset() << s.boldCyan() << titleStr << s.reset();
+    if (pad > 0) out << std::string(pad, ' ');
+    out << s.dim() << "│" << s.reset() << "\n";
+    out << botBorder << "\n\n";
+}
+
+void printHomeScreenBanner(std::ostream& out, const TerminalStyle& s, int width) {
+    std::string topBorder = s.dim() + "╭";
+    for (int i = 0; i < width - 2; ++i) topBorder += "─";
+    topBorder += "╮" + s.reset();
+
+    std::string botBorder = s.dim() + "╰";
+    for (int i = 0; i < width - 2; ++i) botBorder += "─";
+    botBorder += "╯" + s.reset();
+
+    auto printCentered = [&](const std::string& text, const std::string& styleStr) {
+        int vLen = static_cast<int>(visualWidth(text));
+        int totalPad = width - 2 - vLen;
+        int padLeft = totalPad > 0 ? totalPad / 2 : 0;
+        int padRight = totalPad > 0 ? totalPad - padLeft : 0;
+        out << s.dim() << "│" << s.reset()
+            << std::string(padLeft, ' ')
+            << styleStr << text << s.reset()
+            << std::string(padRight, ' ')
+            << s.dim() << "│" << s.reset() << "\n";
+    };
+
+    out << topBorder << "\n";
+    out << s.dim() << "│" << std::string(width - 2, ' ') << "│" << s.reset() << "\n";
+    printCentered("OPTIMISATION SOLVER", s.boldCyan());
+    out << s.dim() << "│" << std::string(width - 2, ' ') << "│" << s.reset() << "\n";
+    printCentered("Modular Mathematical Optimization Engine", s.dim());
+    printCentered("SIH26 • SIH26119", s.bold());
+    out << s.dim() << "│" << std::string(width - 2, ' ') << "│" << s.reset() << "\n";
+    out << botBorder << "\n";
+}
+
+void animateSolveProgress(std::ostream& out, const TerminalStyle& s, const std::string& stage) {
+    if (!s.color) {
+        return;
+    }
+    static const char* frames[] = {"⠋", "⠙", "⠹", "⠸"};
+    for (int i = 0; i < 4; ++i) {
+        out << "\r  " << s.boldCyan() << frames[i] << " " << s.reset()
+            << s.dim() << stage << s.reset() << std::flush;
+        usleep(30000);
+    }
+    out << "\r\033[K" << std::flush;
+}
+
+void printInteractiveMenu(std::ostream& out, const TerminalStyle& s, bool hasModel) {
+    out << s.bold() << "  MAIN MENU" << s.reset() << "\n\n";
+    if (hasModel) {
+        out << "  " << s.boldCyan() << "[1]" << s.reset() << "  Solve Current Model\n";
+        out << "  " << s.boldCyan() << "[2]" << s.reset() << "  Open Another Model\n";
+        out << "  " << s.boldCyan() << "[3]" << s.reset() << "  Model Information\n";
+        out << "  " << s.boldCyan() << "[4]" << s.reset() << "  Solver Settings\n";
+        out << "  " << s.boldCyan() << "[5]" << s.reset() << "  Help\n";
+        out << "  " << s.boldCyan() << "[6]" << s.reset() << "  Exit\n\n";
+        out << "  " << s.dim() << "Select an option [1-6]: " << s.reset();
+    } else {
+        out << "  " << s.boldCyan() << "[1]" << s.reset() << "  Open MPS Model\n";
+        out << "  " << s.boldCyan() << "[2]" << s.reset() << "  Solver Settings\n";
+        out << "  " << s.boldCyan() << "[3]" << s.reset() << "  Model Information\n";
+        out << "  " << s.boldCyan() << "[4]" << s.reset() << "  Help\n";
+        out << "  " << s.boldCyan() << "[5]" << s.reset() << "  Exit\n\n";
+        out << "  " << s.dim() << "Select an option [1-5]: " << s.reset();
+    }
 }
 
 void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, const TerminalStyle& s) {
@@ -180,17 +332,6 @@ void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, cons
         {redStyled, redPlain},
         {engineStyled, enginePlain},
         {"", ""}
-    };
-
-    auto visualWidth = [](const std::string& str) -> std::size_t {
-        std::size_t width = 0;
-        for (std::size_t i = 0; i < str.size(); ++i) {
-            unsigned char c = static_cast<unsigned char>(str[i]);
-            if ((c & 0xC0) != 0x80) {
-                ++width;
-            }
-        }
-        return width;
     };
 
     std::size_t maxPlainLen = 0;

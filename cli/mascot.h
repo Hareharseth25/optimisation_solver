@@ -26,13 +26,34 @@ struct TerminalStyle {
     std::string boldRed() const;
 };
 
-// Mascot and header rendering
-void printMascot(std::ostream& out, const TerminalStyle& style);
+// Mascot states for animation and status display
+enum class MascotState {
+    Idle,
+    Loading,
+    Presolving,
+    Solving,
+    Success,
+    Error
+};
+
+// Mascot and banner rendering
+void printMascot(std::ostream& out, const TerminalStyle& style, MascotState state = MascotState::Idle);
 void printBanner(std::ostream& out);
+
+// Box drawing and headers
+void printHeaderBox(std::ostream& out, const std::string& title, const TerminalStyle& style, int width = 64);
+void printHomeScreenBanner(std::ostream& out, const TerminalStyle& style, int width = 64);
+
+// Animated stage progression (only active when output is interactive TTY and not NO_COLOR)
+void animateSolveProgress(std::ostream& out, const TerminalStyle& style, const std::string& stage);
+
+// Number formatting helper with commas (e.g. 1248 -> "1,248")
+std::string formatNumber(std::int64_t n);
 
 // High-level CLI screen renderers
 void printWelcome(std::ostream& out);
 void printSolveHelp(std::ostream& out);
+void printInteractiveMenu(std::ostream& out, const TerminalStyle& style, bool hasModel = false);
 
 // Solve dashboard and result presentation
 struct SolveDashboardInfo {

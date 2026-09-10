@@ -17,15 +17,16 @@
 
 namespace {
 
-// Helper to run cli::run with vector of string arguments
-int runCli(const std::vector<std::string>& args, std::string& outStr, std::string& errStr) {
+// Helper to run cli::run with vector of string arguments and optional simulated stdin
+int runCli(const std::vector<std::string>& args, std::string& outStr, std::string& errStr, const std::string& input = "") {
     std::vector<char*> argv;
     for (const auto& s : args) {
         argv.push_back(const_cast<char*>(s.c_str()));
     }
     std::ostringstream out;
     std::ostringstream err;
-    int code = cli::run(static_cast<int>(argv.size()), argv.data(), out, err);
+    std::istringstream in(input);
+    int code = cli::run(static_cast<int>(argv.size()), argv.data(), out, err, in);
     outStr = out.str();
     errStr = err.str();
     return code;
@@ -75,7 +76,8 @@ void test_no_arguments() {
     assert(code == 0);
     assert(out.find("OPTIMSOLVER") != std::string::npos);
     assert(out.find("Mathematical Optimization Engine") != std::string::npos);
-    assert(out.find("Getting Started") != std::string::npos);
+    assert(out.find("MAIN MENU") != std::string::npos);
+    assert(out.find("Open MPS Model") != std::string::npos);
     assert(err.empty());
 
     std::cout << "[PASSED] test_no_arguments\n";
@@ -465,7 +467,7 @@ void test_binary_execution() {
     assert(ret == 0);
 
     // 2. Test root binary without args
-    std::string cmdRoot = binPath + " > /dev/null 2>&1";
+    std::string cmdRoot = binPath + " < /dev/null > /dev/null 2>&1";
     ret = std::system(cmdRoot.c_str());
     assert(ret == 0);
 
@@ -481,6 +483,88 @@ void test_binary_execution() {
 
     std::cout << "[PASSED] test_binary_execution\n";
 #endif
+}
+
+void test_interactive_menu_exit() {
+    std::string out, err;
+    int code = runCli({"optimsolver"}, out, err, "5\n");
+    assert(code == 0);
+    assert(out.find("OPTIMSOLVER") != std::string::npos);
+    assert(out.find("Exiting Optimisation Solver.") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_menu_exit\n";
+}
+
+void test_interactive_help() {
+    std::string out, err;
+    int code = runCli({"optimsolver"}, out, err, "4\n\n5\n");
+    assert(code == 0);
+    assert(out.find("HELP") != std::string::npos);
+    assert(out.find("Interactive mode:") != std::string::npos);
+    assert(out.find("USER_GUIDE.md") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_help\n";
+}
+
+void test_interactive_settings() {
+    std::string out, err;
+    // 2: Settings, 1: Change solver -> pdlp, 2: Time limit -> 30, 4: Back, 5: Exit
+    int code = runCli({"optimsolver"}, out, err, "2\n1\npdlp\n2\n30\n4\n5\n");
+    assert(code == 0);
+    assert(out.find("SOLVER SETTINGS") != std::string::npos);
+    assert(out.find("Solver override set to: pdlp") != std::string::npos);
+    assert(out.find("Time limit set to 30") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_settings\n";
+}
+
+void test_interactive_model_info_empty() {
+    std::string out, err;
+    // 3: Model info (when none loaded) -> enter -> 5: Exit
+    int code = runCli({"optimsolver"}, out, err, "3\n\n5\n");
+    assert(code == 0);
+    assert(out.find("No model is currently loaded") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_model_info_empty\n";
+}
+
+void test_interactive_open_model_failed() {
+    std::string out, err;
+    // 1: Open model -> invalid path -> 2: Return to menu -> 5: Exit
+    int code = runCli({"optimsolver"}, out, err, "1\nnonexistent_file_path_xyz.mps\n2\n5\n");
+    assert(code == 0);
+    assert(out.find("Could not load model") != std::string::npos);
+    assert(out.find("Reason:") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_open_model_failed\n";
+}
+
+void test_interactive_open_and_current_model_context() {
+    std::string mpsPath = getTestModelPath("tests/cli/simple_lp.mps");
+    std::string out, err;
+    // 1: Open model -> path
+    // 3: Model Information -> enter
+    // 1: Solve Current Model -> enter (skip export)
+    // 6: Exit
+    int code = runCli({"optimsolver"}, out, err, "1\n" + mpsPath + "\n3\n\n1\n\n6\n");
+    assert(code == 0);
+    assert(out.find("CURRENT MODEL") != std::string::npos);
+    assert(out.find("MODEL INFORMATION") != std::string::npos);
+    assert(out.find("SOLVING") != std::string::npos);
+    assert(out.find("SOLVE RESULT") != std::string::npos);
+    assert(out.find("OPTIMAL") != std::string::npos);
+    assert(out.find("Dual feasibility") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_open_and_current_model_context\n";
+}
+
+void test_interactive_invalid_option() {
+    std::string out, err;
+    int code = runCli({"optimsolver"}, out, err, "99\n5\n");
+    assert(code == 0);
+    assert(out.find("Unrecognised option") != std::string::npos);
+    assert(err.empty());
+    std::cout << "[PASSED] test_interactive_invalid_option\n";
 }
 
 }  // namespace
@@ -507,6 +591,13 @@ int main() {
     test_limit_without_solution_output();
     test_non_tty_no_ansi();
     test_binary_execution();
+    test_interactive_menu_exit();
+    test_interactive_help();
+    test_interactive_settings();
+    test_interactive_model_info_empty();
+    test_interactive_open_model_failed();
+    test_interactive_open_and_current_model_context();
+    test_interactive_invalid_option();
 
     std::cout << "All CLI tests passed successfully!\n";
     return 0;

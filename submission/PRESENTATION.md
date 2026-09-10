@@ -1,39 +1,57 @@
-# SIH 2026 Presentation
+# SIH 2026 Project Presentation
 
-This document tracks the slide deck outline and presentation link for the Smart India Hackathon (SIH) 2026.
+This document tracks the slide deck outline and reference materials for the SIH 2026 final presentation.
+
+---
+
+## Project & Problem Statement Information
+
+- **Organization:** Mangalore Refinery and Petrochemicals Limited (MRPL)
+- **Problem Statement ID:** SIH26119
+- **Problem Statement Title:** Indigenous GPU-Accelerated Optimization Solver (Sovereign Alternative to Express / CPLEX)
+- **Category:** Software
+- **Theme:** Smart Automation
+- **Repository:** `https://github.com/RaghavGupta2910/optimisation_solver`
+
+### Team Members
+- **Raghav Gupta** — Team Lead — System Architecture, Solver Orchestration & CLI
+- **Harehar Narayan Seth** — Lead Numerical Solver Development & Optimization Algorithms
+- **Aryan Kumar** — Solver Engine Development & Numerical Methods
+- **Preetish Attray** — MILP / Branch-and-Cut Development
+- **Kabir Pahwa** — Postsolve, Dual Reconstruction & Solution Validation
+- **Sarisha Jhinghan** — Presolve, Model Processing & Testing
 
 ---
 
 ## Slide Deck Links
 
-- **Local Presentation File:** Place the final file in this directory and update the link below:
+- **Local Presentation File:** Place the final presentation file in this directory:
   - `[Final Presentation PPT](./OptimisationSolver_Presentation.pptx)`
   - `[Final Presentation PDF](./OptimisationSolver_Presentation.pdf)`
 - **Cloud Backup Link (Google Drive / OneDrive):**
-  - `[PASTE_PUBLIC_VIEWER_LINK_HERE]`
-
-> Note: Verify that cloud link permissions are configured so that anyone with the link can view without login prompts.
+  - *Cloud viewer link will be populated upon final slide export with public view permissions.*
 
 ---
 
 ## Slide Structure & Content Outline
 
-1. **Title & Team:** Project title, Problem Statement ID, team members, and institutional affiliations.
-2. **Context & Motivation:** Importance of mathematical optimization in logistics, operations research, and scheduling; motivations for building a modular, decoupled solver architecture.
-3. **Pipeline Architecture:** Sequence diagram from input to solution:
-   - MPS Ingestion → Model IR → Validation → Original Classification → Presolve (once) → Dispatch (`solveReduced`) → Solver Engine → Postsolve (once) → Feasibility Verification.
+1. **Title & Team:** Official project title, MRPL Problem Statement ID (SIH26119), team members, and technical roles.
+2. **Problem Context:** Strategic and operational need for indigenous mathematical optimization solvers in refinery scheduling, supply chains, and resource allocation to eliminate dependence on expensive proprietary commercial tools (Xpress, CPLEX).
+3. **Architecture & Design Principles:**
+   - Decoupled, modular architecture: `MPS Ingestion → Model IR → Validation → Original Classification → Presolve (Once) → Dispatch → Solver Engine → Postsolve (Once) → Feasibility Verification`.
+   - The Single-Presolve Invariant: coordinate transformations are logged explicitly in metadata and inverted during postsolve.
 4. **Presolve & Postsolve Invertibility:**
-   - How fixed variables, singleton rows, and redundant constraints are reduced while preserving index mappings.
-   - Dual postsolve: Reconstructing shadow prices and reduced costs via bound-tightening provenance tracking, with stationarity validation and fail-closed error handling.
-5. **Solver Engines:**
-   - PDLP: First-order PDHG method with adaptive step sizing and Ruiz preconditioning for linear programs.
-   - Dual Simplex: Tableau pivoting method providing basic solutions and serving as the relaxation solver for integer subproblems.
-   - Branch-and-Cut: Branch-and-bound tree with Gomory fractional cuts and primal heuristics for MILP.
-   - QP Engine: ADMM method with KKT factorizations for convex quadratic programs.
-6. **CLI & Diagnostics:** Terminal interface, mascot banner, solve dashboard card, solver overrides, and output file export.
-7. **Automated Testing & Correctness:** CTest suite execution covering presolve cascades, dual postsolve checks, engine conventions, and end-to-end pipelines.
-8. **Roadmap & Future Extensions:**
-   - Input format extension (`.lp` format reader).
-   - Additional presolve reduction techniques (variable substitutions, binary probing).
-   - Parallel tree search for branch-and-cut.
-   - Barrier / interior point method for continuous models.
+   - Reduction passes: fixed variable removal, singleton equality rows, bound tightening, and redundant constraint elimination.
+   - Dual postsolve: reconstructing shadow prices and reduced costs by reversing bound-tightening provenance logs, with stationarity and complementary slackness verification.
+   - Fail-closed safety: rejecting non-finite values (`NaN`, `±Inf`) and invalid dual reconstructions.
+5. **Numerical Engines:**
+   - PDLP: First-order PDHG algorithm with Ruiz equilibration and adaptive step sizes for continuous LPs.
+   - Dual Simplex: Tableau-based solver providing basic solutions and LP relaxation solves.
+   - Branch-and-Cut: Branch-and-bound tree with Gomory fractional cuts and primal rounding heuristics for MILP.
+   - QP Engine: ADMM algorithm with augmented KKT factorizations for convex quadratic objectives.
+6. **User Experience & CLI:**
+   - Interactive terminal menu interface for inspecting models, configuring parameters, and running solves.
+   - Direct command-line batch mode (`optimsolver solve <model.mps> [options]`).
+   - Standard CMake install target for terminal deployment.
+7. **Automated Verification:** Test coverage across presolve cascades, dual postsolve checks, engine conventions, and end-to-end solve pipelines.
+8. **Roadmap:** Future GPU/CUDA acceleration for linear algebra kernels, `.lp` file format support, and parallel branch-and-bound search.

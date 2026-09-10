@@ -13,8 +13,9 @@ bool ArgumentParser::isValidSolverName(const std::string& name) {
 }
 
 std::string ArgumentParser::getRootHelp() {
-    return "Usage: optimsolver <command> [options]\n\n"
+    return "Usage: optimsolver [command] [options]\n\n"
            "Commands:\n"
+           "  (none)              Launch interactive terminal interface\n"
            "  solve <model.mps>   Solve an optimisation problem in MPS format\n\n"
            "Options:\n"
            "  -h, --help          Show this help message\n\n"
@@ -37,8 +38,7 @@ ParseResult ArgumentParser::parse(int argc, const char* const argv[]) {
     ParseResult res;
 
     if (argc <= 1) {
-        res.command = Command::Help;
-        res.isHelp = true;
+        res.command = Command::Interactive;
         res.success = true;
         return res;
     }
@@ -48,6 +48,12 @@ ParseResult ArgumentParser::parse(int argc, const char* const argv[]) {
     if (firstArg == "--help" || firstArg == "-h") {
         res.command = Command::Help;
         res.isHelp = true;
+        res.success = true;
+        return res;
+    }
+
+    if (firstArg == "interactive") {
+        res.command = Command::Interactive;
         res.success = true;
         return res;
     }

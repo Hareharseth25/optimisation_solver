@@ -1,73 +1,83 @@
 # SIH 2026 Demonstration Video
 
-This document contains instructions, placeholders, and a suggested script sequence for the SIH 2026 project demonstration video.
+This document outlines the demonstration video script, terminal workflow, and video links for SIH 2026.
 
 ---
 
-## Video Links
+## Project Information
 
-Upload the recording to YouTube (set as Unlisted or Public) or Google Drive, then add the link below:
+- **Organization:** Mangalore Refinery and Petrochemicals Limited (MRPL)
+- **Problem Statement ID:** SIH26119
+- **Problem Statement Title:** Indigenous GPU-Accelerated Optimization Solver (Sovereign Alternative to Express / CPLEX)
+- **Category:** Software (Smart Automation)
+
+### Video Links
+
+*Upload the recording to YouTube (Unlisted or Public) or Google Drive, then update the links below:*
 
 - **Primary Video Link (YouTube / Google Drive):**
-  `[PASTE_DEMO_VIDEO_LINK_HERE]`
-
+  *Video link will be added upon final recording.*
 - **Backup Mirror Link:**
-  `[PASTE_BACKUP_LINK_HERE]`
-
-> Note: If using Google Drive, ensure link sharing permissions are set to "Anyone with the link can view".
+  *Backup link will be added upon final recording.*
 
 ---
 
-## Suggested Demo Script & Flow (3–5 Minutes)
+## Demonstration Script & Video Flow (3–5 Minutes)
 
-### 1. Introduction & CLI Startup (~30s)
-- State the project title and Problem Statement focus.
-- Show the built binary in `./build/optimsolver`.
-- Run the top-level help command to display the welcome banner, robot mascot, and command list:
+### 1. Introduction (~30s)
+- State the project title and MRPL Problem Statement ID (SIH26119).
+- Explain the motivation: creating a sovereign, open-source, modular optimization solver for LP, MILP, and QP to reduce reliance on expensive closed-source commercial tools.
+- Highlight the repository architecture and clean separation of concerns.
+
+### 2. Interactive Terminal Interface (~60s)
+- Launch the interactive mode:
   ```bash
-  ./build/optimsolver --help
+  ./build/optimsolver
   ```
+- Walk through the terminal interface:
+  - Point out the robot mascot banner, home screen card, and problem families (LP, QP, MILP).
+  - Select Option `1` (Open MPS Model).
+  - Enter `tests/cli/simple_lp.mps`.
+  - Highlight the active **CURRENT MODEL** context card and the detailed **Model Information** screen.
+  - Select `[1]` to solve the current model.
+  - Review the **SOLVE RESULT** card: status (`✓ OPTIMAL`), objective value, solve time, and primal, integrality, and dual feasibility checks.
+  - Return to the main menu with current model context preserved.
 
-### 2. Solving a Continuous Linear Program (~45s)
-- Run a baseline solve on a sample linear programming model:
+### 3. Non-Interactive Command-Line Solve (~45s)
+- Exit or open a clean terminal to demonstrate batch mode:
   ```bash
   ./build/optimsolver solve tests/cli/simple_lp.mps
   ```
-- Highlight the solve dashboard card:
-  - Model dimensions vs. reduced dimensions
-  - Active solver engine selected by the dispatcher
-  - Solve status (`Optimal`), objective value, and iterations
-  - Availability of shadow prices and reduced costs
+- Demonstrate forcing a different engine via `--solver`:
+  ```bash
+  ./build/optimsolver solve tests/cli/simple_lp.mps --solver pdlp
+  ```
+- Highlight that the dispatcher honours the user's engine override.
 
-### 3. Presolve Reduction & Solution Export (~60s)
-- Solve an instance that exercises presolve reductions and exports the solution vector:
+### 4. Presolve Reduction & Solution Export (~60s)
+- Solve a problem that exercises presolve reductions and exports the solution:
   ```bash
   ./build/optimsolver solve tests/cli/presolve_reduction.mps --output /tmp/solution.txt
   ```
 - Explain the pipeline behavior:
-  - The original problem has 3 variables; presolve detects that variable `X3` is fixed and reduces the model to 2 variables before calling the solver.
-  - The engine solves the 2-variable reduced model.
-  - Postsolve reconstructs all 3 original variables and calculates shadow prices and reduced costs.
-- Inspect the exported solution file:
+  - Original problem has 3 variables; presolve detects that variable `X3` is fixed and reduces the model to 2 variables before calling the solver.
+  - The solver runs on the reduced 2-variable problem.
+  - Postsolve reconstructs all 3 original variables, re-evaluates the objective, and verifies feasibility against original constraints.
+- Inspect the output file:
   ```bash
   cat /tmp/solution.txt
   ```
-  Note that `X3` is correctly restored to its fixed value, and dual multipliers are included.
+  Show that `X3` is correctly restored to its fixed value of 5, along with constraint duals and reduced costs.
 
-### 4. Engine Override via CLI Flag (~45s)
-- Demonstrate overriding the automatic dispatcher to select a specific engine:
-  ```bash
-  ./build/optimsolver solve tests/cli/simple_lp.mps --solver pdlp
-  ```
-- Point out the solver switch to `pdlp` in the terminal dashboard.
-
-### 5. Automated Test Suite Execution (~30s)
-- Run the CTest suite to demonstrate automated verification across unit, cascade, and integration tests:
+### 5. Automated Verification & Testing (~30s)
+- Run CTest to demonstrate automated verification across all test targets:
   ```bash
   ctest --test-dir build --output-on-failure
   ```
-- Highlight that all registered test targets execute and pass cleanly.
+- Highlight 100% passing tests across unit algorithms, cascades, postsolve dual checks, and integration tests.
 
-### 6. Wrap Up (~30s)
-- Summarize the modular pipeline architecture (single presolve, solver dispatch, invertible postsolve with dual reconstruction).
-- Mention roadmap directions, including `.lp` file parsing support and additional presolve reduction rules.
+### 6. Wrap Up & Roadmap (~30s)
+- Conclude with the roadmap:
+  - Adding GPU/CUDA accelerated linear algebra kernels for large-scale PDLP and QP solves.
+  - Ingesting LP format (`.lp`) files.
+  - Multi-threaded branch-and-bound search.
