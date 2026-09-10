@@ -128,9 +128,35 @@ void derived_bound() {
   unavailable(postsolve::Postsolver().process(m, p, x, {0.75}), "optimality");
 }
 
-// Verify the actual singleton log, then independently exercise each transfer
-// path. With both records present the price must equal either path alone,
-// never twice the hand-derived price. Negative coefficients reverse bound sides.
+void missing_bound_provenance() {
+  // Both rows are tight at x=3. Either can support a valid KKT multiplier,
+  // but that does not tell us WHICH row caused the derived upper bound.
+  model::Model m;
+  m.variables = {variable("x", 0, 10)};
+  m.objective.sense = model::ObjectiveSense::Maximize;
+  m.objective.linearTerms = {{0, 6}};
+  m.constraints = {row(-INF, 6, {{0, 2}}), row(-INF, 12, {{0, 4}})};
+  auto p = identity(m);
+  p.model.variables[0].upperBound = 3;
+  presolve::Transformation t;
+  t.type = Type::TightenUpperBound;
+  t.oldValue = 10;
+  t.newValue = 3;
+  // Deliberately leave the original source indices unset. Local index zero,
+  // a tight row, and an active bound must not substitute for provenance.
+  p.transformations = {t};
+  unavailable(postsolve::Postsolver().process(m, p, {3}, {0, 0}), "provenance");
+
+  // Explicitly identify row 1; it must receive the price, not tight row 0.
+  t.originalVariableIndex = 0;
+  t.originalConstraintIndex = 1;
+  p.transformations = {t};
+  available(postsolve::Postsolver().process(m, p, {3}, {0, 0}), {0, 1.5}, {0});
+}
+
+// Verify the actual singleton log, then compare the combined log with tightening
+// alone. Removal alone has lost the causal bound record and must fail closed.
+// Negative coefficients reverse bound sides.
 void singleton(double lower, double upper, double optimum, double minCost) {
   for (double coefficient : {2.0, -2.0}) {
     for (double sense : {1.0, -1.0}) {
@@ -192,7 +218,9 @@ void singleton(double lower, double upper, double optimum, double minCost) {
               ? t.type == Type::TightenLowerBound || t.type == Type::TightenUpperBound
               : t.type == Type::RemoveConstraint;
         }), log.end());
-        available(postsolve::Postsolver().process(m, singlePath, x, {}), {price}, {0});
+        auto singleResult = postsolve::Postsolver().process(m, singlePath, x, {});
+        if (retainRemoval) unavailable(singleResult, "provenance");
+        else available(singleResult, {price}, {0});
       }
     }
   }
@@ -207,6 +235,190 @@ void singleton_equality() {
 void singleton_ranged() {
   singleton(2, 4, 2, 6);
   singleton(2, 4, 4, -6);
+}
+
+void invalid_bound_indices() {
+  model::Model m;
+  m.variables = {variable("x", 0, 10), variable("absent", 0, 10)};
+  m.objective.sense = model::ObjectiveSense::Maximize;
+  m.objective.linearTerms = {{0, 6}};
+  m.constraints = {row(-INF, 6, {{0, 2}})};
+  presolve::Transformation valid;
+  valid.type = Type::TightenUpperBound;
+  valid.originalVariableIndex = 0;
+  valid.originalConstraintIndex = 0;
+  valid.oldValue = 10;
+  valid.newValue = 3;
+  auto p = identity(m);
+  const auto check = [&](const presolve::Transformation& t, const std::string& reason) {
+    auto bad = p;
+    bad.transformations = {t};
+    unavailable(postsolve::Postsolver().process(m, bad, {3, 3}, {0}), reason);
+  };
+  for (auto index : {presolve::INVALID_ORIGINAL_INDEX, m.constraints.size()}) {
+    auto t = valid;
+    t.originalConstraintIndex = index;
+    check(t, "original constraint index");
+  }
+  for (auto index : {presolve::INVALID_ORIGINAL_INDEX, m.variables.size()}) {
+    auto t = valid;
+    t.originalVariableIndex = index;
+    check(t, "original variable index");
+  }
+  auto t = valid;
+  t.originalVariableIndex = 1;
+  check(t, "absent from source row");
+}
+
+void invalid_bound_direction() {
+  // All supplied primal points are feasible, all candidate rows are tight.
+  // A valid source index still does not excuse an inconsistent bound record.
+  for (double coefficient : {2.0, -2.0}) {
+    model::Model m;
+    m.variables = {variable("x", 0, 10)};
+    m.objective.linearTerms = {{0, 0}};
+    m.constraints = {coefficient > 0 ? row(-INF, 6, {{0, coefficient}})
+                                    : row(-6, INF, {{0, coefficient}})};
+    presolve::Transformation t;
+    t.type = Type::TightenLowerBound;  // row actually implies an UPPER bound
+    t.originalVariableIndex = t.originalConstraintIndex = 0;
+    t.oldValue = 0;
+    t.newValue = 3;
+    auto p = identity(m);
+    p.transformations = {t};
+    unavailable(postsolve::Postsolver().process(m, p, {3}, {0}), "bound direction");
+    t.type = Type::TightenUpperBound;
+    t.oldValue = 10;
+    t.newValue = 2;  // not the bound implied by this row
+    p.transformations = {t};
+    unavailable(postsolve::Postsolver().process(m, p, {3}, {0}), "not implied");
+    t.newValue = 3;
+    t.oldValue = 9;  // not the preceding upper bound
+    p.transformations = {t};
+    unavailable(postsolve::Postsolver().process(m, p, {3}, {0}), "bound history");
+    t.oldValue = 10;
+    t.newValue = 11;
+    p.transformations = {t};
+    unavailable(postsolve::Postsolver().process(m, p, {3}, {0}), "declared direction");
+    for (double value : {INF, -INF, std::numeric_limits<double>::quiet_NaN()}) {
+      t.newValue = value;
+      p.transformations = {t};
+      unavailable(postsolve::Postsolver().process(m, p, {3}, {0}), "bound value");
+    }
+  }
+}
+
+void invalid_source_coefficient() {
+  // Zero/cancelling or overflowing sums of finite coefficients must fail even
+  // though activity at x=0 remains finite, so the primal itself is valid.
+  for (const auto& terms : std::vector<std::vector<model::LinearTerm>>{
+           {{0, 0}}, {{0, 2}, {0, -2}},
+           {{0, std::numeric_limits<double>::max()}, {0, std::numeric_limits<double>::max()}}}) {
+    model::Model m;
+    m.variables = {variable("x", 0, 10)};
+    m.constraints = {row(-INF, 0, terms)};
+    presolve::Transformation t;
+    t.type = Type::TightenUpperBound;
+    t.originalVariableIndex = t.originalConstraintIndex = 0;
+    t.oldValue = 10;
+    t.newValue = 0;
+    auto p = identity(m);
+    p.transformations = {t};
+    unavailable(postsolve::Postsolver().process(m, p, {0}, {0}), "source coefficient");
+  }
+}
+
+void invalid_singleton_provenance() {
+  model::Model m;
+  m.variables = {variable("x", 0, 10)};
+  m.objective.sense = model::ObjectiveSense::Maximize;
+  m.objective.linearTerms = {{0, 6}};
+  m.constraints = {row(-INF, 6, {{0, 2}})};
+  const auto p = presolve::Presolver().run(m);
+  const auto x = reducedPrimal(p, {3});
+  for (double a : {0.0, -2.0, 4.0, INF, std::numeric_limits<double>::quiet_NaN()}) {
+    auto bad = p;
+    bad.postsolve.removedConstraints.front().singletonCoefficient = a;
+    unavailable(postsolve::Postsolver().process(m, bad, x, {}), "singleton provenance");
+  }
+  // The later removal must not consume d[k] and mask a corrupt tightening.
+  auto bad = p;
+  bad.transformations.front().originalConstraintIndex = presolve::INVALID_ORIGINAL_INDEX;
+  unavailable(postsolve::Postsolver().process(m, bad, x, {}), "bound provenance");
+  bad = p;
+  std::reverse(bad.transformations.begin(), bad.transformations.end());
+  unavailable(postsolve::Postsolver().process(m, bad, x, {}), "preceding tightening");
+  bad = p;
+  bad.transformations.back().originalVariableIndex = presolve::INVALID_ORIGINAL_INDEX;
+  unavailable(postsolve::Postsolver().process(m, bad, x, {}), "indices do not agree");
+}
+
+void provenance_after_elimination() {
+  // Original variable 0 and row 0 disappear. The source must still be named
+  // using original indices (row 1, variable 1), with the fixed contribution
+  // 2*1 accounted for in 2*fixed + 4*x <= 14 -> x<=3.
+  model::Model m;
+  m.variables = {variable("fixed", 1, 1), variable("x", 0, 10)};
+  m.objective.sense = model::ObjectiveSense::Maximize;
+  m.objective.linearTerms = {{1, 8}};
+  m.constraints = {row(-INF, 1, {}), row(-INF, 14, {{0, 2}, {1, 4}})};
+  const auto p = presolve::Presolver().run(m);
+  require(p.postsolve.presolvedToOriginalVar == std::vector<std::size_t>{1},
+          "original variable zero must be eliminated");
+  require(std::any_of(p.transformations.begin(), p.transformations.end(), [](const auto& t) {
+    return t.type == Type::TightenUpperBound && t.originalVariableIndex == 1 &&
+           t.originalConstraintIndex == 1 && t.index == 0;
+  }), "source provenance must survive index compaction");
+  auto r = postsolve::Postsolver().process(m, p, reducedPrimal(p, {1, 3}), {});
+  available(r, {0, 2}, {-4, 0});
+  vectorNear(r.primalSolution, {1, 3}, "primal after elimination");
+}
+
+void provenance_bound_history() {
+  // z>=1 is tightened first. Only that earlier bound allows x+z<=4 to
+  // derive x<=3; using the optimum z=1 to invent this history is forbidden.
+  model::Model m;
+  m.variables = {variable("x", 0, 10), variable("z", 0, 10)};
+  m.objective.sense = model::ObjectiveSense::Maximize;
+  m.objective.linearTerms = {{0, 2}};
+  m.constraints = {row(-INF, 4, {{0, 1}, {1, 1}}), row(1, INF, {{1, 1}})};
+  const auto p = presolve::Presolver().run(m);
+  const auto x = reducedPrimal(p, {3, 1});
+  available(postsolve::Postsolver().process(m, p, x, {0}), {2, -2}, {0, 0});
+  auto bad = p;
+  auto& log = bad.transformations;
+  log.erase(std::remove_if(log.begin(), log.end(), [](const auto& t) {
+    return t.type == Type::TightenLowerBound && t.originalConstraintIndex == 1;
+  }), log.end());
+  unavailable(postsolve::Postsolver().process(m, bad, x, {0}), "not implied");
+}
+
+void derived_bound_directions() {
+  // Exercise all four general (non-singleton) bound-tightening emitters:
+  // lower/upper row side crossed with positive/negative target coefficient.
+  for (bool lowerRow : {false, true}) {
+    for (double a : {2.0, -2.0}) {
+      const bool lowerVariable = lowerRow == (a > 0);
+      const double z = lowerRow ? 1 : 0;
+      const double cost = lowerVariable ? 6 : -6;
+      const double rhs = a*3 + z;
+      model::Model m;
+      m.variables = {variable("x", 0, 10), variable("z", 0, 1)};
+      m.objective.linearTerms = {{0, cost}};
+      m.constraints = {lowerRow ? row(rhs, INF, {{0, a}, {1, 1}})
+                                : row(-INF, rhs, {{0, a}, {1, 1}})};
+      const auto p = presolve::Presolver().run(m);
+      require(p.postsolve.presolvedToOriginalConstraint == std::vector<std::size_t>{0},
+              "source row must survive");
+      require(std::any_of(p.transformations.begin(), p.transformations.end(), [&](const auto& t) {
+        return t.type == (lowerVariable ? Type::TightenLowerBound : Type::TightenUpperBound) &&
+               t.originalVariableIndex == 0 && t.originalConstraintIndex == 0 &&
+               std::abs(t.newValue - 3) < EPS;
+      }), "presolve must emit the expected source and bound direction");
+      available(postsolve::Postsolver().process(m, p, reducedPrimal(p, {3, z}), {0}),
+                {cost/a}, {0, -cost/a});
+    }
+  }
 }
 
 void inactive_singleton() {
@@ -399,6 +611,14 @@ void primal_only() {
 
 struct Test { const char* name; void (*run)(); };
 const Test tests[] = {
+    {"missing_bound_provenance", missing_bound_provenance},
+    {"invalid_bound_indices", invalid_bound_indices},
+    {"invalid_bound_direction", invalid_bound_direction},
+    {"invalid_source_coefficient", invalid_source_coefficient},
+    {"invalid_singleton_provenance", invalid_singleton_provenance},
+    {"provenance_after_elimination", provenance_after_elimination},
+    {"provenance_bound_history", provenance_bound_history},
+    {"derived_bound_directions", derived_bound_directions},
     {"known_shadow_price", known_shadow_price}, {"derived_bound", derived_bound},
     {"singleton_lower", singleton_lower}, {"singleton_upper", singleton_upper},
     {"singleton_equality", singleton_equality}, {"singleton_ranged", singleton_ranged},

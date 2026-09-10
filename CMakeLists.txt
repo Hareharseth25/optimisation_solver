@@ -104,7 +104,10 @@ foreach(case IN ITEMS
     singleton_equality singleton_ranged inactive_singleton reduced_costs
     equality_dual lower_dual upper_dual fixed_variable empty_duals
     wrong_dual_size invalid_constraint_mapping residual_gate nonfinite_duals nonfinite_reconstruction
-    quadratic_gradient quadratic_reconstruction primal_only)
+    quadratic_gradient quadratic_reconstruction primal_only missing_bound_provenance
+    invalid_bound_indices invalid_bound_direction invalid_source_coefficient
+    invalid_singleton_provenance provenance_after_elimination provenance_bound_history
+    derived_bound_directions)
     add_test(NAME PostsolveDual_${case} COMMAND test_postsolve_duals ${case})
 endforeach()
 

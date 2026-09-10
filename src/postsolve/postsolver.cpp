@@ -408,6 +408,99 @@ double coefficientOf(const model::Constraint& row, std::size_t variableIndex) {
   }
   return a;
 }
+
+bool sameBound(double a, double b, double tol) {
+  return a == b || (std::isfinite(a) && std::isfinite(b) &&
+      std::abs(a - b) <= tol * std::max({1.0, std::abs(a), std::abs(b)}));
+}
+
+// Verify causality from the forward log, independently of the solution or duals.
+// The six tightening emitters in Presolver already record stable row/variable
+// indices and old/new bounds. Replay only those bounds to check that the named
+// original row actually implies each recorded bound, with the recorded direction.
+// Fixed-variable elimination is accounted for by equal bounds in this history;
+// no primal reconstruction or substitution is performed here.
+std::string validateBoundProvenance(const model::Model& original,
+                                   const presolve::PresolveResult& presolved,
+                                   double tol) {
+  std::vector<double> lower, upper;
+  for (const auto& v : original.variables) {
+    lower.push_back(v.lowerBound);
+    upper.push_back(v.upperBound);
+  }
+  std::unordered_set<std::size_t> removedRows;
+  for (std::size_t pos = 0; pos < presolved.transformations.size(); ++pos) {
+    const auto& tr = presolved.transformations[pos];
+    if (tr.type == presolve::TransformationType::RemoveConstraint) {
+      removedRows.insert(tr.originalConstraintIndex);
+      continue;
+    }
+    const bool tightenLower = tr.type == presolve::TransformationType::TightenLowerBound;
+    if (!tightenLower && tr.type != presolve::TransformationType::TightenUpperBound) continue;
+    const auto invalid = [&](const std::string& detail) {
+      return "bound provenance at transformation " + std::to_string(pos) + ": " + detail;
+    };
+    const auto k = tr.originalVariableIndex;
+    const auto i = tr.originalConstraintIndex;
+    if (i >= original.constraints.size())
+      return invalid("originating original constraint index is missing or out of range");
+    if (k >= original.variables.size())
+      return invalid("affected original variable index is missing or out of range");
+    if (removedRows.count(i))
+      return invalid("source row was already removed; expected a preceding tightening");
+
+    const auto& row = original.constraints[i];
+    std::map<std::size_t, double> coefficients;
+    for (const auto& term : row.linearTerms) {
+      if (term.variableIndex < 0 ||
+          static_cast<std::size_t>(term.variableIndex) >= lower.size())
+        return invalid("source row contains an invalid original variable index");
+      if (!std::isfinite(term.value)) return invalid("source coefficient is not finite");
+      auto& sum = coefficients[static_cast<std::size_t>(term.variableIndex)];
+      sum += term.value;
+      if (!std::isfinite(sum)) return invalid("source coefficient is not finite");
+    }
+    const auto found = coefficients.find(k);
+    if (found == coefficients.end()) return invalid("affected variable is absent from source row");
+    const double a = found->second;
+    if (std::abs(a) <= kDualEps) return invalid("source coefficient is zero or too small");
+    if (!std::isfinite(tr.newValue) || std::isnan(tr.oldValue))
+      return invalid("recorded bound value is not finite");
+    const double oldBound = tightenLower ? lower[k] : upper[k];
+    if (!sameBound(tr.oldValue, oldBound, tol))
+      return invalid("old bound does not match the preceding bound history");
+    if (tightenLower ? tr.newValue <= tr.oldValue : tr.newValue >= tr.oldValue)
+      return invalid("recorded bound does not tighten in the declared direction");
+
+    // For a>0, a lower variable bound comes from the row's lower side;
+    // for a<0 it comes from the upper side. Upper variable bounds reverse this.
+    const bool fromLowerRow = tightenLower == (a > 0.0);
+    const double rhs = fromLowerRow ? row.lowerBound : row.upperBound;
+    if (!std::isfinite(rhs))
+      return invalid("bound direction requires a finite source constraint side");
+    double otherActivity = 0.0;
+    for (const auto& [j, coefficient] : coefficients) {
+      if (j == k || coefficient == 0.0) continue;
+      // Lower rows use the maximum other activity; upper rows use the minimum.
+      const double bound = fromLowerRow == (coefficient > 0.0) ? upper[j] : lower[j];
+      if (!std::isfinite(bound))
+        return invalid("preceding bounds do not establish a finite source-row implication");
+      otherActivity += coefficient * bound;
+      if (!std::isfinite(otherActivity)) return invalid("source-row implication overflows");
+    }
+    double implied = (rhs - otherActivity) / a;
+    if (!std::isfinite(implied)) return invalid("source-row implication is not finite");
+    if (original.variables[k].type != model::VariableType::Continuous) {
+      // Match the presolver's existing integer-bound rounding convention.
+      implied = tightenLower ? std::ceil(implied - kDualEps) : std::floor(implied + kDualEps);
+    }
+    if (!sameBound(tr.newValue, implied, tol))
+      return invalid("new bound is not implied by the named original constraint and preceding bounds");
+    if (tightenLower) lower[k] = tr.newValue;
+    else upper[k] = tr.newValue;
+  }
+  return {};
+}
 }  // namespace
 
 std::vector<double> Postsolver::objectiveGradient(
@@ -444,6 +537,20 @@ void Postsolver::reconstructDuals(
   const std::size_t n = originalModel.variables.size();
   const std::size_t m = originalModel.constraints.size();
   const std::vector<double>& x = result.primalSolution;
+
+  const auto failProvenance = [&](const std::string& reason) {
+    result.dualsAvailable = false;
+    result.constraintDuals.clear();
+    result.reducedCosts.clear();
+    result.dualsUnavailableReason = reason;
+  };
+  // Validate before either reverse-log handler can consume a multiplier. In
+  // particular, singleton removal must not hide a malformed earlier tightening.
+  const auto provenanceError = validateBoundProvenance(originalModel, presolveResult, tolerance_);
+  if (!provenanceError.empty()) {
+    failProvenance(provenanceError);
+    return;
+  }
 
   if (presolvedConstraintDuals.size() != meta.presolvedToOriginalConstraint.size()) {
     result.dualsAvailable = false;
@@ -513,7 +620,8 @@ void Postsolver::reconstructDuals(
       case presolve::TransformationType::TightenUpperBound: {
         const std::size_t k = tr.originalVariableIndex;
         const std::size_t i = tr.originalConstraintIndex;
-        if (k >= n || i >= m) break;
+        // Indices, coefficient, direction and row implication were checked
+        // against the forward metadata before entering the reverse walk.
         // Only a bound that the solution actually sits on carries a
         // multiplier; an inactive derived bound has none to move.
         if (std::abs(x[k] - tr.newValue) > tol) break;
@@ -530,22 +638,51 @@ void Postsolver::reconstructDuals(
       }
       case presolve::TransformationType::RemoveConstraint: {
         const std::size_t i = tr.originalConstraintIndex;
-        if (i >= m) break;
+        if (i >= m) {
+          failProvenance("singleton provenance: original constraint index is missing or out of range");
+          return;
+        }
         auto found = removed.find(i);
-        if (found == removed.end()) break;
+        if (found == removed.end()) {
+          failProvenance("removal provenance: no metadata for the referenced original constraint");
+          return;
+        }
         const auto* rec = found->second;
         if (rec->wasSingleton) {
           // The row was turned into a bound on one variable. Its price is
           // whatever ended up on that bound.
           const std::size_t k = rec->singletonOriginalVarIndex;
-          const double a = rec->singletonCoefficient;
-          if (k >= n || std::abs(a) <= kDualEps) break;
+          if (k >= n || tr.originalVariableIndex != k) {
+            failProvenance("singleton provenance: affected original variable indices do not agree");
+            return;
+          }
+          const double a = coefficientOf(originalModel.constraints[i], k);
+          if (!std::isfinite(a) || std::abs(a) <= kDualEps ||
+              !std::isfinite(rec->singletonCoefficient) ||
+              !sameBound(a, rec->singletonCoefficient, tol)) {
+            failProvenance("singleton provenance: coefficient does not match the original source row");
+            return;
+          }
           // Same gate: x sitting on a bound does not mean the row that
           // produced that bound is tight. Here the variable may simply be at
           // its own original bound, whose multiplier belongs to the bound and
           // not to this row.
           if (!rowIsTight(originalModel.constraints[i], x, tol)) break;
           if (std::abs(d[k]) <= kDualEps) break;
+          // wasSingleton identifies a removed row, but only an earlier,
+          // validated tightening establishes that THIS active bound came from it.
+          const bool hasSourceBound = std::any_of(
+              presolveResult.transformations.begin(), it.base() - 1,
+              [&](const presolve::Transformation& bound) {
+                return (bound.type == presolve::TransformationType::TightenLowerBound ||
+                        bound.type == presolve::TransformationType::TightenUpperBound) &&
+                       bound.originalConstraintIndex == i && bound.originalVariableIndex == k &&
+                       std::abs(bound.newValue - x[k]) <= tol;
+              });
+          if (!hasSourceBound) {
+            failProvenance("singleton provenance: no preceding tightening identifies the active source bound");
+            return;
+          }
           applyRow(i, d[k] / a);
         }
         // Redundant, duplicate, parallel and empty rows can be assigned zero;
