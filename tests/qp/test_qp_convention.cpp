@@ -80,22 +80,9 @@ static void checkCase(const char* tag, const model::Model& m,
     report(tag, m, r);
     ck(r.status == solver::SolveStatus::Optimal, std::string(tag) + ": status Optimal");
     if (r.status != solver::SolveStatus::Optimal) return;
-    // SolveResult documents variableValues as indexed by the REDUCED model,
-    // not the original: presolve can delete a fixed variable outright (it
-    // does, folding its objective contribution into the offset). Mapping back
-    // to the caller's variable list is postsolve's job -- PR #11 -- so the
-    // contract checked here is the one actually promised.
-    ck(r.variableValues.size() == r.reducedVariableCount,
-       std::string(tag) + ": |x| == reducedVariableCount (documented contract)");
-    if (r.variableValues.size() != m.variables.size()) {
-        // Presolve reduced the model, so the per-variable and direct-evaluation
-        // checks below cannot be applied in the caller's index space. Verify
-        // only what survives that reduction: the objective value.
-        near(r.objectiveValue, expectObj, tolObj, std::string(tag) + ": reported objective");
-        std::printf("      (note: presolve reduced %zu vars -> %zu; per-variable checks skipped)\n",
-                    m.variables.size(), r.variableValues.size());
-        return;
-    }
+    ck(r.hasPrimal && r.variableValues.size() == m.variables.size(),
+       std::string(tag) + ": all original variables are reconstructed");
+    if (r.variableValues.size() != m.variables.size()) return;
 
     for (size_t j = 0; j < m.variables.size(); ++j) {
         ck(r.variableValues[j] >= m.variables[j].lowerBound - 1e-7 &&

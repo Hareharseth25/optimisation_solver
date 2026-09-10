@@ -227,6 +227,11 @@ bool Postsolver::validateSolution(
     PostsolveResult& result) const {
   result.maxBoundResidual = 0.0;
   result.maxConstraintResidual = 0.0;
+  if (x.size() != originalModel.variables.size()) {
+    result.status = PostsolveStatus::InvalidMapping;
+    result.errorMessage = "Primal vector size does not match the supplied model.";
+    return false;
+  }
 
   // 1. Explicitly reject all non-finite primal values (NaN, +Inf, -Inf)
   // before ordinary bound, integrality, or constraint validation.
@@ -713,7 +718,8 @@ double Postsolver::dualResidual(const model::Model& originalModel,
                                 const PostsolveResult& result) const {
   const std::size_t n = originalModel.variables.size();
   const std::size_t m = originalModel.constraints.size();
-  if (result.constraintDuals.size() != m || result.reducedCosts.size() != n) {
+  if (result.primalSolution.size() != n ||
+      result.constraintDuals.size() != m || result.reducedCosts.size() != n) {
     return std::numeric_limits<double>::infinity();
   }
   const std::vector<double>& x = result.primalSolution;

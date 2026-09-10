@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -364,7 +365,80 @@ void test_single_presolve_integration() {
     assert(std::abs(postsolveRes.primalSolution[1] - 0.0) < 1e-4);
     assert(std::abs(postsolveRes.primalSolution[2] - 5.0) < 1e-4);
 
+    const auto complete = solver::solve(model);
+    assert(complete.hasPrimal && complete.hasDuals);
+    assert(complete.variableValues.size() == model.variables.size());
+    assert(complete.reducedVariableCount == presolveRes.model.variables.size());
+    assert(complete.constraintDuals.size() == model.constraints.size());
+    assert(complete.reducedCosts.size() == model.variables.size());
+    assert(std::abs(complete.objectiveValue - postsolveRes.originalObjectiveValue) < 1e-4);
+
     std::cout << "[PASSED] test_single_presolve_integration\n";
+}
+
+void test_original_sensitivities_output() {
+    const auto check = [](bool ok, const std::string& message) {
+        if (!ok) throw std::runtime_error(message);
+    };
+    const auto mpsPath = getTestModelPath("tests/cli/presolve_reduction.mps");
+    const std::string solPath = "test_cli_sensitivities.txt";
+    std::remove(solPath.c_str());
+    std::string out, err;
+    const int code = runCli({"optimsolver", "solve", mpsPath, "--output", solPath}, out, err);
+    check(code == 0 && err.empty(), "sensitivity export must succeed");
+    check(out.find("Duals available: 1 shadow prices, 3 reduced costs") != std::string::npos,
+          "CLI must report original-model sensitivity dimensions");
+    std::ifstream file(solPath);
+    check(file.is_open(), "solution file must exist");
+    int duals = 0, costs = 0;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.rfind("# Dual ", 0) == 0) {
+            std::istringstream entry(line.substr(7));
+            std::string name;
+            double value = 0;
+            entry >> name >> value;
+            check(name == "C1" && std::abs(value - 2) < 1e-6, "original demand shadow price is 2");
+            ++duals;
+        }
+        if (line.rfind("# Reduced cost ", 0) == 0) {
+            std::istringstream entry(line.substr(15));
+            std::string name;
+            double value = 0;
+            entry >> name >> value;
+            const double expected = name == "X1" ? 0 : name == "X2" ? 1 : 2;
+            check((name == "X1" || name == "X2" || name == "X3") &&
+                  std::abs(value - expected) < 1e-6, "original reduced costs must include fixed X3");
+            ++costs;
+        }
+    }
+    file.close();
+    std::remove(solPath.c_str());
+    check(duals == 1 && costs == 3, "all original sensitivities must be exported");
+    std::cout << "[PASSED] test_original_sensitivities_output\n";
+}
+
+void test_limit_without_solution_output() {
+    const auto check = [](bool ok, const std::string& message) {
+        if (!ok) throw std::runtime_error(message);
+    };
+    const auto mpsPath = getTestModelPath("tests/cli/simple_lp.mps");
+    const std::string solPath = "test_cli_no_solution.txt";
+    std::remove(solPath.c_str());
+    std::string out, err;
+    int code = runCli({"optimsolver", "solve", mpsPath, "--solver", "pdlp",
+                       "--time-limit", "1e-30"}, out, err);
+    check(code == 0 && err.empty(), "time limit is a normal reported solver outcome");
+    check(out.find("Limit Reached") != std::string::npos &&
+          out.find("No feasible solution available") != std::string::npos,
+          "CLI must distinguish no solution from a valid empty solution");
+    check(out.find("Objective") == std::string::npos, "no fabricated objective on a limit");
+    code = runCli({"optimsolver", "solve", mpsPath, "--solver", "pdlp",
+                   "--time-limit", "1e-30", "--output", solPath}, out, err);
+    check(code != 0 && err.find("Output unavailable") != std::string::npos,
+          "requested output must report that no solution exists");
+    check(!std::ifstream(solPath).is_open(), "do not create a partial or fictitious solution file");
+    std::cout << "[PASSED] test_limit_without_solution_output\n";
 }
 
 void test_non_tty_no_ansi() {
@@ -429,6 +503,8 @@ int main() {
     test_solve_output_file();
     test_solve_with_forced_engines();
     test_single_presolve_integration();
+    test_original_sensitivities_output();
+    test_limit_without_solution_output();
     test_non_tty_no_ansi();
     test_binary_execution();
 
