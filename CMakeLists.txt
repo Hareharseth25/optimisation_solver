@@ -70,18 +70,25 @@ target_include_directories(test_adversarial PRIVATE
 add_test(NAME PresolveAdversarial COMMAND test_adversarial)
 
 # Postsolve: reconstructs the original-model solution from the
-# PresolveResult/PostsolveMetadata produced above. Built the same way as the
-# presolve test executables (source list, not a shared library) to match the
-# existing pattern in this file.
+# PresolveResult/PostsolveMetadata produced above.
+add_library(postsolver
+    src/postsolve/postsolver.cpp
+)
+target_include_directories(postsolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_compile_features(postsolver PUBLIC cxx_std_17)
+if(NOT MSVC)
+    target_compile_options(postsolver PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 add_executable(test_postsolve
     tests/postsolve/test_postsolver.cpp
     src/model/model.cpp
     src/presolve/presolver.cpp
-    src/postsolve/postsolver.cpp
 )
 target_include_directories(test_postsolve PRIVATE
     ${PROJECT_SOURCE_DIR}/include
 )
+target_link_libraries(test_postsolve PRIVATE postsolver)
 add_test(NAME PostsolveTests COMMAND test_postsolve)
 
 # Linear programming engine. Self-contained and C++17; builds the library only.
@@ -150,6 +157,16 @@ if(NOT MSVC)
     target_compile_options(solver_orchestrator PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+# Parser for mathematical programming system (.mps) input format.
+add_library(mps_reader
+    src/mps/mps_reader.cpp
+)
+target_include_directories(mps_reader PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_compile_features(mps_reader PUBLIC cxx_std_17)
+if(NOT MSVC)
+    target_compile_options(mps_reader PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 # End-to-end: model in, solution out, through every layer in the real order.
 add_executable(test_end_to_end tests/pipeline/test_end_to_end.cpp)
 target_link_libraries(test_end_to_end PRIVATE solver_orchestrator)
@@ -170,3 +187,38 @@ add_test(NAME test_qp_convention COMMAND test_qp_convention)
 add_executable(test_milp_enumeration tests/milp/test_milp_enumeration.cpp)
 target_link_libraries(test_milp_enumeration PRIVATE solver_orchestrator)
 add_test(NAME test_milp_enumeration COMMAND test_milp_enumeration)
+
+# Command-line interface application layer
+add_library(optimsolver_cli
+    cli/argument_parser.cpp
+    cli/cli.cpp
+    cli/mascot.cpp
+)
+target_include_directories(optimsolver_cli PUBLIC
+    ${PROJECT_SOURCE_DIR}/cli
+    ${PROJECT_SOURCE_DIR}/include
+)
+target_link_libraries(optimsolver_cli PUBLIC
+    solver_orchestrator
+    mps_reader
+    postsolver
+)
+target_compile_features(optimsolver_cli PUBLIC cxx_std_17)
+if(NOT MSVC)
+    target_compile_options(optimsolver_cli PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_executable(optimsolver
+    cli/main.cpp
+)
+target_link_libraries(optimsolver PRIVATE optimsolver_cli)
+
+add_executable(test_cli
+    tests/cli/test_cli.cpp
+)
+target_link_libraries(test_cli PRIVATE optimsolver_cli)
+target_compile_definitions(test_cli PRIVATE
+    OPTIMSOLVER_BIN_PATH="$<TARGET_FILE:optimsolver>"
+    TEST_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+add_test(NAME test_cli COMMAND test_cli)

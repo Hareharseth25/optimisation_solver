@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 namespace solver {
 
@@ -34,6 +35,7 @@ enum class Engine {
 };
 
 [[nodiscard]] const char* toString(Engine value) noexcept;
+[[nodiscard]] std::optional<Engine> parseEngine(std::string_view name) noexcept;
 
 // Caller-facing knobs the dispatcher must respect.
 struct SolverOptions {

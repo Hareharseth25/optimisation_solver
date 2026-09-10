@@ -25,4 +25,16 @@ namespace solver {
     const SolverOptions& options = {}
 );
 
+// Solves a model that has ALREADY been reduced/presolved.
+//
+// Dispatches directly to the selected engine on `presolvedModel` using the
+// `classification` of the original model, and normalises the result into a
+// SolveResult in the coordinates of `presolvedModel`.
+// Unlike solve(), this does NOT run presolve.
+[[nodiscard]] SolveResult solveReduced(
+    const model::Model& presolvedModel,
+    const Classification& classification,
+    const SolverOptions& options = {}
+);
+
 }  // namespace solver
