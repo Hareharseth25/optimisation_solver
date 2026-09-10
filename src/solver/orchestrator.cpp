@@ -86,8 +86,7 @@ double integralityViolation(const model::Model& model,
     return worst;
 }
 
-// Apply the same publication rules to both API entry points. For solveReduced,
-// metadata is an identity map; solve uses the actual presolve transformation log.
+// Restore original coordinates exactly once, using the actual presolve log.
 SolveResult reconstructResult(const model::Model& original,
                               const presolve::PresolveResult& presolved,
                               SolveResult result, const SolverOptions& options) {
@@ -154,6 +153,100 @@ SolveResult reconstructResult(const model::Model& original,
     else if (integerModel) result.dualsUnavailableReason = "Dual sensitivities are unavailable for integer models.";
     else if (result.status != SolveStatus::Optimal)
         result.dualsUnavailableReason = "Dual sensitivities require an optimal solution.";
+    return result;
+}
+
+// Validate engine output in the supplied coordinates. No identity mapping or
+// transformation replay is needed: row duals already refer to this model.
+SolveResult normalizeReducedResult(const model::Model& model, SolveResult result,
+                                   const SolverOptions& options) {
+    const auto clearSolution = [&]() {
+        result.hasPrimal = false;
+        result.variableValues.clear();
+        result.objectiveValue = 0.0;
+        result.hasDuals = false;
+        result.constraintDuals.clear();
+        result.reducedCosts.clear();
+    };
+    if (result.status != SolveStatus::Optimal && result.status != SolveStatus::LimitReached) {
+        clearSolution();
+        result.dualsUnavailableReason = "No optimal solution is available.";
+        return result;
+    }
+    if (result.variableValues.size() != model.variables.size()) {
+        if (result.status == SolveStatus::Optimal) {
+            result.status = SolveStatus::NumericalFailure;
+            result.message = "Engine returned an incomplete primal solution.";
+        }
+        clearSolution();
+        result.dualsUnavailableReason = "No complete primal solution is available.";
+        return result;
+    }
+    const bool integerModel = std::any_of(model.variables.begin(), model.variables.end(),
+        [](const model::Variable& v) { return v.type != model::VariableType::Continuous; });
+    model::Model relaxation;
+    const model::Model* validationModel = &model;
+    if (integerModel && result.executedEngine != Engine::BranchAndCut &&
+        result.executedEngine != Engine::Trivial) {
+        relaxation = model;
+        for (auto& v : relaxation.variables) v.type = model::VariableType::Continuous;
+        validationModel = &relaxation;
+    }
+    const double tolerance = std::max(postsolve::DEFAULT_POSTSOLVE_TOLERANCE, options.tolerance);
+    const postsolve::Postsolver validator(tolerance);
+    postsolve::PostsolveResult checked;
+    const bool valid = validator.validateSolution(*validationModel, result.variableValues, checked);
+    const double objective = valid ? validator.evaluateObjective(model, result.variableValues) : 0.0;
+    if (!valid || !std::isfinite(objective)) {
+        if (result.status == SolveStatus::Optimal) result.status = SolveStatus::NumericalFailure;
+        result.message += "; engine result: " + (valid
+            ? std::string("Non-finite objective.") : checked.errorMessage);
+        clearSolution();
+        result.dualsUnavailableReason = "No valid primal solution is available.";
+        return result;
+    }
+    result.hasPrimal = true;
+    result.objectiveValue = objective;
+    result.maxIntegralityViolation = integralityViolation(model, result.variableValues);
+    result.integralityRespected = result.maxIntegralityViolation <= tolerance;
+
+    if (integerModel) {
+        result.hasDuals = false;
+        result.dualsUnavailableReason = "Dual sensitivities are unavailable for integer models.";
+    } else if (result.status != SolveStatus::Optimal) {
+        result.hasDuals = false;
+        result.dualsUnavailableReason = "Dual sensitivities require an optimal solution.";
+    } else if (result.hasDuals) {
+        if (result.constraintDuals.size() != model.constraints.size()) {
+            result.hasDuals = false;
+            result.dualsUnavailableReason = "Engine returned an incomplete dual solution.";
+        } else {
+            checked.primalSolution = result.variableValues;
+            checked.constraintDuals = result.constraintDuals;
+            checked.reducedCosts = validator.objectiveGradient(model, result.variableValues);
+            for (std::size_t i = 0; i < model.constraints.size(); ++i) {
+                if (result.constraintDuals[i] == 0.0) continue;
+                for (const auto& term : model.constraints[i].linearTerms)
+                    checked.reducedCosts[term.variableIndex] -= term.value * result.constraintDuals[i];
+            }
+            result.maxDualResidual = validator.dualResidual(model, checked);
+            double scale = 1.0;
+            for (double dual : result.constraintDuals) scale = std::max(scale, std::abs(dual));
+            result.hasDuals = std::isfinite(result.maxDualResidual) &&
+                             result.maxDualResidual <= tolerance * 100.0 * scale;
+            if (result.hasDuals) {
+                result.reducedCosts = std::move(checked.reducedCosts);
+                result.dualsUnavailableReason.clear();
+            } else {
+                result.dualsUnavailableReason = "Engine multipliers violate the supplied model's "
+                    "optimality conditions by " + std::to_string(result.maxDualResidual);
+            }
+        }
+    }
+    if (!result.hasDuals) {
+        result.constraintDuals.clear();
+        result.reducedCosts.clear();
+    }
     return result;
 }
 
@@ -470,19 +563,7 @@ SolveResult solveReduced(const model::Model& presolvedModel,
 
     result.reducedVariableCount = presolvedModel.variables.size();
     result.reducedConstraintCount = presolvedModel.constraints.size();
-    presolved.originalVariables = presolved.presolvedVariables = presolvedModel.variables.size();
-    presolved.originalConstraints = presolved.presolvedConstraints = presolvedModel.constraints.size();
-    presolved.postsolve.initialObjectiveOffset = presolvedModel.objective.offset;
-    presolved.postsolve.presolvedObjectiveOffset = presolvedModel.objective.offset;
-    for (std::size_t j = 0; j < presolvedModel.variables.size(); ++j) {
-        presolved.postsolve.presolvedToOriginalVar.push_back(j);
-        presolved.postsolve.originalToPresolvedVar.push_back(static_cast<int>(j));
-    }
-    for (std::size_t i = 0; i < presolvedModel.constraints.size(); ++i) {
-        presolved.postsolve.presolvedToOriginalConstraint.push_back(i);
-        presolved.postsolve.originalToPresolvedConstraint.push_back(static_cast<int>(i));
-    }
-    result = reconstructResult(presolvedModel, presolved, std::move(result), options);
+    result = normalizeReducedResult(presolvedModel, std::move(result), options);
     result.solveSeconds = secondsSince(start);
     return result;
 }
@@ -517,7 +598,7 @@ SolveResult solve(const model::Model& model, const SolverOptions& options) {
         return result;
     }
 
-    // 3. Solve the reduced model using solveReduced with original classification.
+    // 3. Dispatch and validate in reduced coordinates, without postsolve.
     result = solveReduced(presolved.model, classification, options);
     // Do not skip empty vectors: presolve may have eliminated every variable.
     result = reconstructResult(model, presolved, std::move(result), options);

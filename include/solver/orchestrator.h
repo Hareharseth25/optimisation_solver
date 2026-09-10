@@ -31,7 +31,8 @@ namespace solver {
 // `classification` of the original model, and normalises the result into a
 // SolveResult in the coordinates of `presolvedModel`.
 // Unlike solve(), this does NOT run presolve or expand into another model's
-// coordinates. It validates primal/dual results against presolvedModel itself.
+// coordinates or invoke postsolve reconstruction. It validates primal/dual
+// results directly against presolvedModel itself.
 [[nodiscard]] SolveResult solveReduced(
     const model::Model& presolvedModel,
     const Classification& classification,

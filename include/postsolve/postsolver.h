@@ -98,6 +98,20 @@ class Postsolver {
       const model::Model& model,
       const std::vector<double>& x) const;
 
+  // Coordinate-local numerical checks shared with engine-result normalization.
+  // These do not inspect presolve metadata or reconstruct/transfer multipliers.
+  // The model must be structurally valid; vectors use its variable/row indices.
+  bool validateSolution(
+      const model::Model& originalModel,
+      const std::vector<double>& x,
+      PostsolveResult& result) const;
+
+  // Measures how badly the supplied multipliers violate the supplied
+  // model's optimality conditions. Returns the worst violation found.
+  [[nodiscard]] double dualResidual(
+      const model::Model& originalModel,
+      const PostsolveResult& result) const;
+
  private:
   double tolerance_;
 
@@ -111,11 +125,6 @@ class Postsolver {
       const std::vector<double>& presolvedPrimalSolution,
       PostsolveResult& result) const;
 
-  bool validateSolution(
-      const model::Model& originalModel,
-      const std::vector<double>& x,
-      PostsolveResult& result) const;
-
   // Walks the transformation log in reverse, moving multipliers that presolve
   // parked on derived variable bounds back onto the rows they came from.
   void reconstructDuals(
@@ -123,12 +132,6 @@ class Postsolver {
       const presolve::PresolveResult& presolveResult,
       const std::vector<double>& presolvedConstraintDuals,
       PostsolveResult& result) const;
-
-  // Measures how badly the reconstructed multipliers violate the ORIGINAL
-  // model's optimality conditions. Returns the worst violation found.
-  [[nodiscard]] double dualResidual(
-      const model::Model& originalModel,
-      const PostsolveResult& result) const;
 };
 
 }  // namespace postsolve

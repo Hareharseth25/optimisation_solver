@@ -74,6 +74,12 @@ void lp_engines() {
         require(reduced.variableValues.size() == 2 && reduced.constraintDuals.size() == 1 &&
                 reduced.reducedCosts.size() == 2, "solveReduced keeps its input model's coordinates");
         near(reduced.objectiveValue, result.objectiveValue);
+        if (engine == solver::Engine::DualSimplex) {
+            // In supplied coordinates the derived upper bound keeps its price.
+            // Only solve(original) may transfer it to the originating row.
+            vectorNear(reduced.constraintDuals, {0.75});
+            vectorNear(reduced.reducedCosts, {0, 0.25});
+        }
     }
 }
 
@@ -90,14 +96,16 @@ void qp_signs() {
             m.objective.quadraticTerms = {{0, 0, sense}, {1, 1, sense}};
             m.constraints = {row("sum", side == 1 ? -INF : 4,
                                  side == 0 ? INF : 4, {{0, 1}, {1, 1}})};
-            const auto result = solver::solve(m);
-            optimal(result);
-            require(result.executedEngine == solver::Engine::Qp, "QP engine must run");
-            vectorNear(result.variableValues, {2, 2});
-            near(result.objectiveValue, 9 + sense*(8 + 4*c));
-            require(result.hasDuals, result.dualsUnavailableReason);
-            vectorNear(result.constraintDuals, {sense*(4 + c)});
-            vectorNear(result.reducedCosts, {0, 0});
+            for (const auto& result : {solver::solve(m),
+                                      solver::solveReduced(m, solver::classify(m))}) {
+                optimal(result);
+                require(result.executedEngine == solver::Engine::Qp, "QP engine must run");
+                vectorNear(result.variableValues, {2, 2});
+                near(result.objectiveValue, 9 + sense*(8 + 4*c));
+                require(result.hasDuals, result.dualsUnavailableReason);
+                vectorNear(result.constraintDuals, {sense*(4 + c)});
+                vectorNear(result.reducedCosts, {0, 0});
+            }
         }
     }
 }
@@ -237,6 +245,70 @@ void limit_feasible_solution() {
     near(result.objectiveValue, 12);
     noDuals(result, "optimal solution");
 }
+void reduced_api() {
+    // No presolve: fixed variables retain their supplied indices and costs.
+    model::Model m;
+    m.variables = {var("fixed", 3, 3), var("lower", 0, 10), var("upper", 0, 5)};
+    m.objective.offset = 7;
+    m.objective.linearTerms = {{0, 4}, {1, 2}, {2, -3}};
+    auto result = solver::solveReduced(m, solver::classify(m));
+    optimal(result);
+    require(result.hasDuals && result.constraintDuals.empty(), "bound-only dual input is complete");
+    vectorNear(result.variableValues, {3, 0, 5});
+    vectorNear(result.reducedCosts, {4, 2, -3});
+    near(result.objectiveValue, 4);
+    require(result.reducedVariableCount == 3, "solveReduced must not eliminate fixed variables");
+
+    model::Model empty;
+    empty.objective.offset = 9;
+    result = solver::solveReduced(empty, solver::classify(empty));
+    optimal(result);
+    require(result.hasDuals && result.variableValues.empty() && result.reducedCosts.empty(),
+            "empty supplied model has a complete solution");
+    near(result.objectiveValue, 9);
+
+    m.variables = {var("x", 0, 1), var("y", 0, 1)};
+    for (auto& v : m.variables) v.type = model::VariableType::Binary;
+    m.objective.offset = 0;
+    m.objective.sense = model::ObjectiveSense::Maximize;
+    m.objective.linearTerms = {{0, 1}, {1, 1}};
+    m.constraints = {row("capacity", -INF, 3, {{0, 2}, {1, 2}})};
+    result = solver::solveReduced(m, solver::classify(m));
+    optimal(result);
+    near(result.objectiveValue, 1);
+    require(result.integralityRespected, "direct integer solve respects integrality");
+    noDuals(result, "integer models");
+    solver::SolverOptions options;
+    options.forceEngine = solver::Engine::DualSimplex;
+    result = solver::solveReduced(m, solver::classify(m), options);
+    optimal(result);
+    near(result.objectiveValue, 1.5);
+    require(!result.integralityRespected, "direct forced relaxation reports fractional point");
+    noDuals(result, "integer models");
+
+    for (auto& v : m.variables) v.type = model::VariableType::Continuous;
+    options.forceEngine = solver::Engine::Pdlp;
+    options.timeLimitSeconds = 1e-30;
+    result = solver::solveReduced(m, solver::classify(m), options);
+    require(result.status == solver::SolveStatus::LimitReached && result.hasPrimal,
+            "direct limit keeps a feasible iterate");
+    vectorNear(result.variableValues, {0, 0});
+    noDuals(result, "optimal solution");
+    m.constraints = {row("demand", 1, INF, {{0, 1}, {1, 1}})};
+    result = solver::solveReduced(m, solver::classify(m), options);
+    require(result.status == solver::SolveStatus::LimitReached && !result.hasPrimal &&
+            result.variableValues.empty(), "direct limit withholds an infeasible iterate");
+    noDuals(result, "primal");
+
+    m.variables = {var("x")};
+    m.constraints.clear();
+    m.objective.sense = model::ObjectiveSense::Minimize;
+    m.objective.linearTerms = {{0, -1}};
+    result = solver::solveReduced(m, solver::classify(m));
+    require(result.status == solver::SolveStatus::Unbounded && !result.hasPrimal &&
+            result.variableValues.empty(), "direct unbounded solve withholds partial point");
+    noDuals(result, "optimal");
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -245,7 +317,7 @@ int main(int argc, char** argv) {
         {"all_eliminated", all_eliminated}, {"bound_only", bound_only},
         {"integer_models", integer_models}, {"unavailable_duals", unavailable_duals},
         {"failure_statuses", failure_statuses}, {"limit_no_solution", limit_no_solution},
-        {"limit_feasible_solution", limit_feasible_solution}};
+        {"limit_feasible_solution", limit_feasible_solution}, {"reduced_api", reduced_api}};
     int count = 0, failures = 0;
     for (const auto& test : tests) {
         if (argc > 1 && std::string(argv[1]) != test.name) continue;

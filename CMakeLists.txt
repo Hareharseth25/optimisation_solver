@@ -208,7 +208,7 @@ add_test(NAME test_end_to_end COMMAND test_end_to_end)
 add_executable(test_postsolve_integration tests/pipeline/test_postsolve_integration.cpp)
 target_link_libraries(test_postsolve_integration PRIVATE solver_orchestrator)
 foreach(case IN ITEMS lp_engines qp_signs all_eliminated bound_only integer_models
-    unavailable_duals failure_statuses limit_no_solution limit_feasible_solution)
+    unavailable_duals failure_statuses limit_no_solution limit_feasible_solution reduced_api)
     add_test(NAME PostsolveIntegration_${case} COMMAND test_postsolve_integration ${case})
 endforeach()
 
