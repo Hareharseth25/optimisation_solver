@@ -454,6 +454,13 @@ void Postsolver::reconstructDuals(
     return;
   }
 
+  for (double dual : presolvedConstraintDuals) {
+    if (!std::isfinite(dual)) {
+      result.dualsUnavailableReason = "reduced dual vector contains a non-finite multiplier";
+      return;
+    }
+  }
+
   // Seed: rows that survived presolve keep the engine's price; rows presolve
   // removed start at zero and are filled in as the log is reversed.
   std::vector<double> y(m, 0.0);
@@ -495,6 +502,9 @@ void Postsolver::reconstructDuals(
   const double tol = tolerance_;
 
   // Reverse order: the last transformation applied is the first undone.
+  // A singleton logs tightening before removal, so its removal transfers first.
+  // Both handlers use the CURRENT d[k], which applyRow consumes, preventing the
+  // earlier tightening record from transferring the same multiplier again.
   for (auto it = presolveResult.transformations.rbegin();
        it != presolveResult.transformations.rend(); ++it) {
     const auto& tr = *it;
@@ -538,9 +548,9 @@ void Postsolver::reconstructDuals(
           if (std::abs(d[k]) <= kDualEps) break;
           applyRow(i, d[k] / a);
         }
-        // Redundant, duplicate, parallel and empty rows cannot be binding at
-        // the optimum -- a duplicate's price stays wholly on the row that
-        // survived -- so zero is a valid multiplier and is already in place.
+        // Redundant, duplicate, parallel and empty rows can be assigned zero;
+        // a duplicate's price stays wholly on the surviving row. Binding does
+        // not require a nonzero multiplier when the restriction is redundant.
         break;
       }
       case presolve::TransformationType::FixVariable:
@@ -580,6 +590,16 @@ double Postsolver::dualResidual(const model::Model& originalModel,
   // not judged against the same absolute slack as one whose numbers are 1.
   double scale = 1.0;
   const std::vector<double> g = objectiveGradient(originalModel, x);
+  // NaN comparisons can silently leave std::max's accumulator at zero.
+  // Check explicitly, including arithmetic overflow from otherwise finite
+  // inputs, before any residual or fixed-variable/equality exemption.
+  const auto allFinite = [](const std::vector<double>& values) {
+    return std::all_of(values.begin(), values.end(),
+                       [](double v) { return std::isfinite(v); });
+  };
+  if (!allFinite(g) || !allFinite(y) || !allFinite(d)) {
+    return std::numeric_limits<double>::infinity();
+  }
   for (double v : g) scale = std::max(scale, std::abs(v));
   for (double v : y) scale = std::max(scale, std::abs(v));
   const double tol = tolerance_ * scale;
@@ -597,6 +617,7 @@ double Postsolver::dualResidual(const model::Model& originalModel,
         }
       }
     }
+    if (!allFinite(lhs)) return std::numeric_limits<double>::infinity();
     for (std::size_t j = 0; j < n; ++j) worst = std::max(worst, std::abs(lhs[j] - d[j]));
   }
 
@@ -669,8 +690,8 @@ PostsolveResult Postsolver::process(
   result.maxDualResidual = dualResidual(originalModel, result);
   double scale = 1.0;
   for (double v : result.constraintDuals) scale = std::max(scale, std::abs(v));
-  if (!(result.maxDualResidual <= tolerance_ * 100.0 * scale)) {
-    result.dualsAvailable = true;  // keep the numbers for diagnosis
+  if (!std::isfinite(result.maxDualResidual) ||
+      !(result.maxDualResidual <= tolerance_ * 100.0 * scale)) {
     result.dualsUnavailableReason =
         "reconstructed multipliers violate the original model's optimality "
         "conditions by " + std::to_string(result.maxDualResidual);

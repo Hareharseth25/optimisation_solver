@@ -84,6 +84,23 @@ target_include_directories(test_postsolve PRIVATE
 )
 add_test(NAME PostsolveTests COMMAND test_postsolve)
 
+# Exercise reconstruction directly, without wiring duals into the pipeline.
+add_executable(test_postsolve_duals
+    tests/postsolve/test_dual_reconstruction.cpp
+    src/model/model.cpp
+    src/presolve/presolver.cpp
+    src/postsolve/postsolver.cpp
+)
+target_include_directories(test_postsolve_duals PRIVATE ${PROJECT_SOURCE_DIR}/include)
+foreach(case IN ITEMS
+    known_shadow_price derived_bound singleton_lower singleton_upper
+    singleton_equality singleton_ranged inactive_singleton reduced_costs
+    equality_dual lower_dual upper_dual fixed_variable empty_duals
+    wrong_dual_size invalid_constraint_mapping residual_gate nonfinite_duals nonfinite_reconstruction
+    quadratic_gradient quadratic_reconstruction primal_only)
+    add_test(NAME PostsolveDual_${case} COMMAND test_postsolve_duals ${case})
+endforeach()
+
 # Linear programming engine. Self-contained and C++17; builds the library only.
 # Its tests and benchmark harnesses stay off here and are enabled by configuring
 # pdlp_engine/ standalone, or with -DPDLP_BUILD_TESTS=ON -DPDLP_BUILD_TOOLS=ON.

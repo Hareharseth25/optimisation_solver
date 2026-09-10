@@ -76,7 +76,9 @@ class Postsolver {
   //
   // `presolvedConstraintDuals` is indexed by the PRESOLVED constraints and
   // must use the shadow-price convention: y_i = d(objective)/d(rhs_i) in the
-  // model's own sense. Pass it empty to skip dual reconstruction entirely.
+  // model's own sense. An empty vector requests reconstruction when presolve
+  // left no constraints; otherwise duals are unavailable. Use the three-argument
+  // overload to skip dual reconstruction entirely.
   PostsolveResult process(
       const model::Model& originalModel,
       const presolve::PresolveResult& presolveResult,
