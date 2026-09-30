@@ -224,25 +224,34 @@ already in the repository: none were added or swapped after seeing results.
 | share2b | feasible | ✅ | ✅ | ✅ | 12 | interior point only |
 | **verified** | 6/8 | 6/8 | **8/8** | 8/8 | 8–13 | |
 
-On `degen2` the barrier took 0.32 s against 0.73 s for our dual simplex and
-0.012 s for HiGHS, and peaked at 10.3 MB against HiGHS's 5.3 MB — factor fill,
-which the missing supervariable detection likely worsens.
+On `degen2` the barrier is about 2.4x faster than our dual simplex and about
+26x slower than HiGHS (0.58 s, 1.40 s and 0.022 s in the latest single run;
+absolute wall times vary with machine load, the ratios have held across runs).
+It peaked at 11.6 MB against HiGHS's 5.3 MB: factor fill, which the missing
+supervariable detection likely worsens.
 
-**Maros-Meszaros convex QP** (the 14-instance frozen smoke list, SHA-256
-verified; published objectives as ground truth; OSQP 1.1.3). The suite
-definition, its fetcher and the OSQP reference adapter are not on `main` yet:
-they arrive with PR #17, and these figures were measured on that branch with
-this engine applied on top.
+**Maros-Meszaros convex QP** (the 14-instance frozen smoke list in
+`benchmarks/suites/qp.json`, SHA-256 verified; published objectives as ground
+truth; OSQP 1.1.3), measured on `main` including the ADMM engine fixes merged
+with PR #17:
 
 | | ADMM (`qp`) | **barrier** | OSQP |
 |---|---|---|---|
-| optimal_verified | 8/14 | **14/14** | 14/14 |
-| no point returned | 2 (`hs118`, `cvxqp3s`) | 0 | 0 |
+| optimal_verified | 12/14 | **14/14** | 14/14 |
+| no point returned | 1 (`cvxqp3s`) | 0 | 0 |
+
+`optimal_verified` is the independent checker's full KKT verdict, which is
+stricter than the objective agreement that `run_suites.py` reports (13/14 for
+ADMM). The difference is ADMM's `cvxqp1s`: its objective agrees to 4e-9 and
+its gap is 4e-10, but one multiplier's sign violation is 1.02e-6, just above
+the checker's frozen 1e-6 threshold -- a near-optimal answer, not a wrong one.
+`cvxqp3s` is the ADMM engine's documented per-row-rho limitation.
 
 Eleven barrier results were polished, three of them after 2–3 active-set
 corrections. The remaining three (`hs51`, `hs52`, `genhs28`) have no finite
 bounds at all: the Newton step is the exact KKT solve, and they finish in 1–2
-iterations. On `cvxqp1s` the barrier took 0.004 s against 0.211 s for ADMM.
+iterations. On `cvxqp1s` the barrier took 0.007 s against 0.40 s for ADMM and
+0.24 s for OSQP.
 OSQP's memory figures (~49 MB) include its Python interpreter and are not
 comparable.
 
