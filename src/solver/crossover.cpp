@@ -3,6 +3,7 @@
 #include "milp/dual_simplex_solver.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <numeric>
@@ -99,6 +100,18 @@ CrossoverResult crossoverToVertex(const model::Model& model,
         return out;
     }
     if (m == 0) { out.detail = "not applied: no constraints"; return out; }
+
+    // options.timeLimitSeconds is the budget LEFT for crossover (the caller
+    // has already charged the barrier solve). 0 means no limit. Both basis
+    // selection and the simplex cleanup are charged to it.
+    const auto started = std::chrono::steady_clock::now();
+    const auto remaining = [&] {
+        return options.timeLimitSeconds -
+               std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+    };
+    const bool limited = options.timeLimitSeconds > 0.0;
+    const char* const outOfTime = "not applied: time limit reached during crossover";
+    if (limited && remaining() <= 0.0) { out.detail = outOfTime; return out; }
     if (x.size() != static_cast<std::size_t>(n) || y.size() != static_cast<std::size_t>(m)) {
         out.detail = "not applied: interior solution is incomplete";
         return out;
@@ -154,8 +167,12 @@ CrossoverResult crossoverToVertex(const model::Model& model,
 
     IndependentColumns basis(m);
     std::vector<char> variableBasic(static_cast<std::size_t>(n), 0), rowBasic(static_cast<std::size_t>(m), 0);
+    std::size_t examined = 0;
     for (const auto& candidate : candidates) {
         if (basis.size() == m) break;
+        // Each independence test costs O(m * basis size); check the budget
+        // every 64 candidates rather than on every one.
+        if (limited && (++examined & 63u) == 0 && remaining() <= 0.0) { out.detail = outOfTime; return out; }
         if (candidate.logical) {
             // The logical of row i is -e_i in [A | -I]; its sign cannot affect
             // independence.
@@ -201,7 +218,15 @@ CrossoverResult crossoverToVertex(const model::Model& model,
     milp::DualSimplexOptions simplexOptions;
     simplexOptions.primalFeasibilityTolerance = options.tolerance;
     simplexOptions.dualFeasibilityTolerance = options.tolerance;
-    simplexOptions.timeLimitSeconds = options.timeLimitSeconds;
+    // The simplex gets what basis selection left. Never pass it a remainder
+    // of zero or less: for the dual simplex, 0 means unlimited.
+    if (limited) {
+        const double left = remaining();
+        if (left <= 0.0) { out.detail = outOfTime; return out; }
+        simplexOptions.timeLimitSeconds = left;
+    } else {
+        simplexOptions.timeLimitSeconds = 0.0;
+    }
     milp::DualSimplexResult vertex;
     try {
         vertex = milp::DualSimplexSolver{}.solveFromBasis(model, state, simplexOptions);

@@ -526,7 +526,16 @@ Result BarrierSolver::solve(const BarrierProblem& problem, const Options& option
             result.relativeGap <= options.gapTolerance)
         {
             std::string message = "converged: relative primal, dual and gap tolerances met";
-            if (options.polish && boundCount > 0) {
+            // Polishing runs after convergence, before the loop's time check,
+            // and can cost up to 20 factorisations. It is charged to the same
+            // budget: skipped when none is left, and stopped between rounds
+            // once it runs out. The converged interior point is returned
+            // either way, so running out of time here costs accuracy of the
+            // multipliers, never correctness of the status.
+            const bool outOfTime = options.timeLimitSeconds > 0 && elapsed() >= options.timeLimitSeconds;
+            if (options.polish && boundCount > 0 && outOfTime) {
+                message += "; polishing skipped: time limit reached";
+            } else if (options.polish && boundCount > 0) {
                 // Tapia-style identification: near optimality complementarity
                 // leaves slack < multiplier on active bounds and slack >
                 // multiplier on inactive ones.
@@ -544,6 +553,10 @@ Result BarrierSolver::solve(const BarrierProblem& problem, const Options& option
                 bool verified = false;
                 int attempts = 0;
                 for (; attempts < 20; ++attempts) {
+                    if (attempts > 0 && options.timeLimitSeconds > 0 && elapsed() >= options.timeLimitSeconds) {
+                        polished.detail = "time limit reached during active-set correction";
+                        break;
+                    }
                     if (polishToActiveSet(problem, active, options, polished)) { verified = true; break; }
                     if (polished.correctedActiveSet.empty() || polished.correctedActiveSet == active) break;
                     active = polished.correctedActiveSet;

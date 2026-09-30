@@ -51,6 +51,10 @@ struct CrossoverResult {
     std::size_t basicStructural = 0, basicLogical = 0;
 };
 
+// options.timeLimitSeconds is the budget REMAINING for crossover -- the caller
+// charges the barrier solve first -- and covers both basis selection and the
+// simplex cleanup (0 means no limit). When it runs out, crossover is not
+// applied and the interior solution stands.
 [[nodiscard]] CrossoverResult crossoverToVertex(const model::Model& model,
                                                 const std::vector<double>& interiorPrimal,
                                                 const std::vector<double>& interiorDuals,

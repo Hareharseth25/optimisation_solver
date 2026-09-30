@@ -110,6 +110,16 @@ unchanged, so crossover can add a vertex but never make a result worse. It is on
 by default (`SolverOptions::barrierCrossover`), applies to linear objectives
 only, and runs only within the dense dual simplex's size limits.
 
+**Time limit.** `--time-limit` is one budget for the whole barrier solve,
+crossover included. Crossover receives only what the barrier left, and is
+skipped outright when nothing is left: passing on a remainder of zero would be
+read as *no limit*, because that is what 0 means in `SolverOptions`. Inside
+crossover, basis selection and the simplex cleanup are both charged to that
+remainder. Active-set polishing inside the barrier is charged to the barrier's
+own budget. Like every other engine, the budget starts when the engine starts;
+presolve and model translation are not charged to it. A single uninterruptible
+step -- one factorisation -- can still finish after the limit.
+
 ## Polishing
 
 Crossover needs a vertex, and a QP optimum need not be one. For both LPs and

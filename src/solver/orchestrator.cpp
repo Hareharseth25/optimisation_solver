@@ -491,6 +491,9 @@ SolveResult runBarrier(const model::Model& reduced, const SolverOptions& options
     engineOptions.gapTolerance = options.tolerance;
     engineOptions.timeLimitSeconds = options.timeLimitSeconds;
     result.executedEngine = Engine::Barrier;
+    // One budget covers the barrier AND crossover. Like every other engine
+    // path, it starts when the engine starts; model translation is not charged.
+    const auto engineStart = Clock::now();
     const barrier::Result raw = barrier::BarrierSolver{}.solve(problem, engineOptions);
     const barrier::ModelSolution solution = barrier::toModelSolution(reduced, translation, raw);
 
@@ -514,10 +517,28 @@ SolveResult runBarrier(const model::Model& reduced, const SolverOptions& options
     // Crossover to a vertex. See solver/crossover.h for why the interior point
     // alone does not survive this pipeline's vertex-shaped postsolve. The
     // interior solution above stays in place unless the vertex verifies.
+    //
+    // Crossover gets only what the barrier left of the caller's time limit.
+    // It used to receive the ORIGINAL budget a second time, so with
+    // --time-limit 60 a barrier solve could take 59 s and crossover another
+    // 60. An exhausted budget skips crossover outright rather than passing a
+    // remainder of zero on: in SolverOptions, timeLimitSeconds == 0 means NO
+    // limit, so a zero remainder would have turned into an unlimited one.
     if (options.barrierCrossover && raw.status == barrier::Status::Optimal &&
         reduced.objective.quadraticTerms.empty()) {
+        SolverOptions crossoverOptions = options;
+        bool budgetLeft = true;
+        if (options.timeLimitSeconds > 0.0) {
+            const double remaining = options.timeLimitSeconds - secondsSince(engineStart);
+            budgetLeft = remaining > 0.0;
+            crossoverOptions.timeLimitSeconds = remaining;
+        }
+        if (!budgetLeft) {
+            result.message += "; crossover skipped: the time limit was used up by the barrier solve";
+            return result;
+        }
         const CrossoverResult vertex = crossoverToVertex(
-            reduced, result.variableValues, result.constraintDuals, result.objectiveValue, options);
+            reduced, result.variableValues, result.constraintDuals, result.objectiveValue, crossoverOptions);
         if (vertex.applied) {
             result.variableValues = vertex.primal;
             result.constraintDuals = vertex.duals;

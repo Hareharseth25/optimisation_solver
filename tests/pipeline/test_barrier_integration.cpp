@@ -285,6 +285,50 @@ int main() {
                   "crossover applied to a quadratic objective");
         }
 
+        // One time budget covers the barrier and crossover. Crossover used to
+        // receive the caller's ORIGINAL limit a second time, so the barrier
+        // could spend nearly all of it and crossover then start with a fresh
+        // copy. Deterministic setup: min 0 s.t. x0 - x1 = 0 over free
+        // variables is optimal at the barrier's starting point, and the
+        // barrier tests convergence BEFORE its time limit, so it returns
+        // Optimal at iteration 0 even under a 1 ns limit -- which its own run
+        // has always used up by the time crossover would start.
+        {
+            model::Model m;
+            m.variables = {var("x0", -inf, inf), var("x1", -inf, inf)};
+            m.constraints = {row("tie", 0, 0, {{0, 1}, {1, -1}})};
+            const auto classification = solver::classify(m);
+
+            solver::SolverOptions unlimited = forced(Engine::Barrier);
+            const auto free = solver::solveReduced(m, classification, unlimited);
+            check(free.status == solver::SolveStatus::Optimal, "budget case: " + free.message);
+            check(free.message.find("crossover to an optimal vertex") != std::string::npos,
+                  "without a time limit crossover must still run: " + free.message);
+
+            solver::SolverOptions tight = forced(Engine::Barrier);
+            tight.timeLimitSeconds = 1e-9;
+            const auto spent = solver::solveReduced(m, classification, tight);
+            std::printf("  %-38s %s | %s\n", "crossover after an exhausted budget",
+                        solver::toString(spent.status), spent.message.c_str());
+            check(spent.status == solver::SolveStatus::Optimal, "the barrier's own optimum must stand");
+            check(spent.message.find("crossover skipped: the time limit was used up by the barrier solve") !=
+                      std::string::npos,
+                  "crossover was not skipped after the barrier used up the budget: " + spent.message);
+            // The old path launched the simplex with a fresh budget; it only
+            // stopped because the simplex's own clock then ran out.
+            check(spent.message.find("simplex cleanup") == std::string::npos,
+                  "crossover ran the simplex on a budget it did not have: " + spent.message);
+
+            // Crossover charges its OWN work to the budget it is given, and
+            // stops before handing the simplex a remainder it does not have.
+            solver::SolverOptions almostNone;
+            almostNone.timeLimitSeconds = 1e-12;
+            const auto direct = solver::crossoverToVertex(m, {0.0, 0.0}, {0.0}, 0.0, almostNone);
+            check(!direct.applied, "crossover applied with no budget left");
+            check(direct.detail.find("time limit reached during crossover") != std::string::npos,
+                  "crossover did not stop on its own budget: " + direct.detail);
+        }
+
         // Automatic dispatch is unchanged: a small LP still goes to the dual
         // simplex. The barrier is opt-in until benchmarks justify a default.
         {
