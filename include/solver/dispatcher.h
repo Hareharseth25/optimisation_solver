@@ -18,6 +18,11 @@ enum class Engine {
     // Dual simplex. Exact vertex solutions, warm-startable from a basis.
     DualSimplex,
 
+    // Primal-dual interior point (barrier): Mehrotra predictor-corrector with
+    // Gondzio correctors over a sparse quasidefinite LDL'. LP and convex QP.
+    // High accuracy without a vertex; no infeasibility certificate.
+    Barrier,
+
     // Branch-and-cut over the dual simplex. The only engine handling integrality.
     BranchAndCut,
 
@@ -64,6 +69,12 @@ struct SolverOptions {
     // shadow prices should tighten this.
     double tolerance = 1e-8;
     double timeLimitSeconds = 0.0;
+
+    // After an optimal barrier solve of an LP, cross over to an optimal vertex
+    // via the dual simplex so exact duals survive postsolve. On by default, as
+    // in production barrier codes. The vertex is accepted only when it verifies;
+    // otherwise the interior solution is returned unchanged. No effect on QPs.
+    bool barrierCrossover = true;
 
     // Branch-and-bound node budget. <= 0 means unlimited. Used by both MILP
     // and MIQP tree searches; ignored by continuous engines.

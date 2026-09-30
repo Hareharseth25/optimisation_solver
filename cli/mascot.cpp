@@ -200,7 +200,7 @@ void printSolveHelp(std::ostream& out) {
     out << "  <model.mps>             Path to input problem file in MPS format (required)\n\n";
     out << s.bold() << "Options" << s.reset() << "\n";
     out << "  --solver <name>         Force a specific solver engine:\n";
-    out << "                          pdlp, dual_simplex, branch_and_cut, qp, nlp\n";
+    out << "                          pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp\n";
     out << "  --time-limit <seconds>  Maximum solve time budget in seconds (positive number)\n";
     out << "  --output <file>         Write reconstructed original-space solution to file\n";
     out << "  -h, --help              Show this help message\n\n";

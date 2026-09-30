@@ -509,7 +509,7 @@ def main():
     parser.add_argument("--out", default=os.path.join(HERE, "results", "results.json"))
     parser.add_argument("--solvers", default="dual_simplex,pdlp,highs",
                         help="comma separated: auto, dual_simplex, pdlp, "
-                             "branch_and_cut, qp, highs")
+                             "barrier, branch_and_cut, qp, highs")
     parser.add_argument("--threads", type=int, default=1,
                         help="worker threads for our engines; 1 = serial")
     parser.add_argument("--best-known", default=None,

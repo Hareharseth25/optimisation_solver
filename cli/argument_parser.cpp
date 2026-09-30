@@ -31,7 +31,7 @@ std::string ArgumentParser::getSolveHelp() {
            "  <model.mps>             Path to input problem file in MPS format (required)\n\n"
            "Options:\n"
            "  --solver <name>         Force a specific solver engine:\n"
-           "                          pdlp, dual_simplex, branch_and_cut, qp, nlp\n"
+           "                          pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp\n"
            "  --time-limit <seconds>  Maximum solve time budget in seconds (positive number)\n"
            "  --output <file>         Write reconstructed original-space solution to file\n"
            "  --json <file>           Write a structured JSON record of the solve\n"
@@ -139,7 +139,7 @@ ParseResult ArgumentParser::parse(int argc, const char* const argv[]) {
             if (i + 1 >= argc) {
                 res.success = false;
                 res.errorTitle = "Missing value for option '--solver'";
-                res.errorDetails = "Supported engines: pdlp, dual_simplex, branch_and_cut, qp, nlp";
+                res.errorDetails = "Supported engines: pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp";
                 res.errorMessage = "Error: Missing value for option '--solver'.";
                 return res;
             }
@@ -147,16 +147,16 @@ ParseResult ArgumentParser::parse(int argc, const char* const argv[]) {
             if (solverVal.empty() || solverVal[0] == '-') {
                 res.success = false;
                 res.errorTitle = "Missing value for option '--solver'";
-                res.errorDetails = "Supported engines: pdlp, dual_simplex, branch_and_cut, qp, nlp";
+                res.errorDetails = "Supported engines: pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp";
                 res.errorMessage = "Error: Missing value for option '--solver'.";
                 return res;
             }
             if (!isValidSolverName(solverVal)) {
                 res.success = false;
                 res.errorTitle = "Invalid solver '" + solverVal + "'";
-                res.errorDetails = "Supported engines: pdlp, dual_simplex, branch_and_cut, qp, nlp";
+                res.errorDetails = "Supported engines: pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp";
                 res.errorMessage = "Error: Invalid solver '" + solverVal +
-                                   "'. Supported solvers: pdlp, dual_simplex, branch_and_cut, qp, nlp.";
+                                   "'. Supported solvers: pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp.";
                 return res;
             }
             res.solveOptions.solver = solverVal;

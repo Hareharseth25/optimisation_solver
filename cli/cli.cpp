@@ -434,7 +434,7 @@ void displaySettingsScreen(std::ostream& out, std::istream& in, InteractiveSessi
         choice = trim(choice);
 
         if (choice == "1") {
-            out << "\n  Available: auto, pdlp, dual_simplex, branch_and_cut, qp, nlp\n";
+            out << "\n  Available: auto, pdlp, dual_simplex, barrier, branch_and_cut, qp, nlp\n";
             out << "  Enter solver (or 'auto' for default): ";
             std::string eng;
             if (!std::getline(in, eng)) break;

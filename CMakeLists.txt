@@ -155,6 +155,7 @@ add_subdirectory(milp_engine)
 add_subdirectory(qp_engine)
 add_subdirectory(miqp_engine)
 add_subdirectory(nlp_engine)
+add_subdirectory(barrier_engine)
 
 # Classifier and dispatcher. Classification runs before presolve (its reductions
 # differ by problem class); engine selection runs after (presolve changes size,
@@ -200,6 +201,7 @@ add_test(NAME test_pdlp_adapter COMMAND test_pdlp_adapter)
 # target that links all three engines at once.
 add_library(solver_orchestrator
     src/solver/orchestrator.cpp
+    src/solver/crossover.cpp
     src/solver/nlp.cpp
 )
 target_include_directories(solver_orchestrator PUBLIC ${PROJECT_SOURCE_DIR}/include)
@@ -210,6 +212,7 @@ target_link_libraries(solver_orchestrator PUBLIC
     qp_engine
     miqp_engine
     nlp_engine
+    barrier_engine
     postsolver
 )
 target_compile_features(solver_orchestrator PUBLIC cxx_std_17)
@@ -393,6 +396,10 @@ if(Python3_Interpreter_FOUND)
         set_tests_properties(nlp_reference PROPERTIES TIMEOUT 180)
     endif()
 endif()
+
+add_executable(test_barrier_integration tests/pipeline/test_barrier_integration.cpp)
+target_link_libraries(test_barrier_integration PRIVATE solver_orchestrator)
+add_test(NAME barrier_pipeline COMMAND test_barrier_integration)
 
 add_executable(test_nlp_integration tests/pipeline/test_nlp_integration.cpp)
 target_link_libraries(test_nlp_integration PRIVATE solver_orchestrator)

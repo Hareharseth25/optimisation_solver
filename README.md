@@ -34,6 +34,7 @@ The objective of `optimisation_solver` is to establish an open-source, modular o
 - **Linear Programming (LP):** Solved via first-order Primal-Dual Hybrid Gradient (PDLP) with Ruiz equilibration, or tableau-based Dual Simplex for basic feasible solutions.
 - **Mixed-Integer Linear Programming (MILP):** Branch-and-bound search tree combined with Gomory fractional cut generation from simplex tableau rows and primal heuristics.
 - **Convex Quadratic Programming (QP):** Solved via Alternating Direction Method of Multipliers (ADMM) with KKT linear system factorizations.
+- **Barrier (Interior-Point) Method:** Infeasible primal-dual interior-point solver for LP and convex QP (`--solver barrier`): Mehrotra predictor-corrector with Gondzio centrality correctors over a regularised quasidefinite augmented system, factorised by a from-scratch sparse LDL' with approximate-minimum-degree ordering and iterative refinement. LPs cross over to an exact vertex through the dual simplex; QPs are polished to their active set. Verified optimal on 8/8 of the frozen Netlib set and 14/14 of the frozen Maros-Meszaros QP smoke set (that suite arrives with PR #17) — see [barrier_engine/README.md](barrier_engine/README.md).
 - **Postsolve Reconstruction:** Reconstructs original variable coordinates and re-evaluates original objective values with strict non-finite value protection (`NaN`, `±Inf`).
 - **Dual Reconstruction:** Recovers constraint duals (shadow prices) and variable reduced costs by reversing bound-tightening provenance histories, validated against stationarity and complementary slackness residuals.
 - **Dual Interface:** Interactive terminal menu interface alongside a non-interactive command-line tool.
@@ -175,6 +176,7 @@ optimisation_solver/
 ├── pdlp_engine/                   # PDHG first-order linear programming engine
 ├── milp_engine/                   # Dual simplex and branch-and-cut MILP engine
 ├── qp_engine/                     # ADMM convex quadratic programming engine
+├── barrier_engine/                # Primal-dual interior-point LP/QP engine, sparse LDL', AMD
 ├── benchmark_model/               # Sample models for benchmarking
 ├── tests/                         # Automated unit, integration, and pipeline test suites
 └── tools/                         # Helper scripts
@@ -188,7 +190,7 @@ optimisation_solver/
 - **Additional File Formats:** Ingesting LP format (`.lp`) alongside existing MPS support.
 - **Additional Presolve Passes:** Linear variable substitution, duplicate row/column detection, and binary probing.
 - **Parallel Branch-and-Bound:** Multi-threaded tree exploration and cut pool management.
-- **Barrier Solver:** Infeasible primal-dual interior-point method for large continuous problems.
+- **Barrier Solver at scale:** The interior-point engine is implemented and validated on Netlib and Maros-Meszaros (see above), but it is serial with a simplicial (not supernodal) factorisation, computes no infeasibility certificate, and is opt-in rather than automatically dispatched. Large-scale performance has not been established.
 
 ---
 
