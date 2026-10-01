@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=KAIRO
+GenericName=Optimization Solver
+Comment=Kernel for Advanced Integer & Real Optimization — solve and inspect LP/MILP/QP models locally
+Exec=KAIRO
+Terminal=false
+Categories=Science;Math;Development;
+Keywords=optimization;solver;linear programming;MILP;QP;MPS;
+Icon=org.kairo.desktop
+StartupWMClass=KAIRO

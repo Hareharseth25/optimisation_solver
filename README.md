@@ -353,7 +353,7 @@ How defects are handled:
 | GPU | ✅ PDLP; ADMM QP (hybrid) · CUDA, optional build |
 | Input formats | ✅ MPS (fixed and free), QPS quadratic sections, `.nlp` · ➖ LP format |
 | Output | ✅ console summary, solution file, structured JSON report |
-| Interfaces | ✅ interactive terminal UI, batch CLI, C++ library (`solver::solve`) |
+| Interfaces | ✅ KAIRO Desktop (native Qt 6 app: macOS, Windows, Linux), interactive terminal UI, batch CLI, C++ library (`solver::solve`) |
 
 ## Quick start
 
@@ -380,6 +380,18 @@ GPU build:
 cmake -S . -B build-cuda -DCMAKE_BUILD_TYPE=Release -DOPTIMSOLVER_ENABLE_CUDA=ON
 cmake --build build-cuda -j
 ```
+
+### KAIRO Desktop
+
+KAIRO Desktop is a native Qt 6 application that runs the solver in-process. It works offline and needs no browser, web server or network. It shows the result, the evidence behind it, the solver pipeline, model analysis, presolve impact, dispatch decision, execution and validation. It also keeps saved runs, compares runs, and exports/imports run records. It is built automatically when Qt 6.5+ is found:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=<Qt>/<version>/<platform>
+cmake --build build --target KAIRO -j
+open build/desktop/KAIRO.app        # macOS;  Linux: ./build/desktop/KAIRO;  Windows: build\desktop\KAIRO.exe
+```
+
+[desktop/README.md](desktop/README.md) covers builds and packaging (`.app`/DMG, Windows folder, AppImage) and which platforms are tested.
 
 ## Usage
 
@@ -460,6 +472,7 @@ optimisation_solver/
 ├── src/, include/        Pipeline: MPS reader, model IR, classifier, presolve, dispatcher,
 │                         orchestrator, crossover, postsolve and dual reconstruction
 ├── cli/                  Interactive terminal UI, batch CLI, JSON reports
+├── desktop/              KAIRO Desktop: native Qt 6 application (in-process, offline)
 ├── pdlp_engine/          PDHG first-order LP engine (CPU + CUDA)
 ├── milp_engine/          Dual simplex, branch-and-cut, Gomory cuts, heuristics
 ├── barrier_engine/       Interior-point LP/QP engine, sparse LDLᵀ, AMD ordering
@@ -517,6 +530,7 @@ optimisation_solver/
 | Document | Contents |
 |---|---|
 | [USER_GUIDE.md](USER_GUIDE.md) | Build, interactive navigation, CLI options, MPS format, troubleshooting |
+| [desktop/README.md](desktop/README.md) | KAIRO Desktop: build, packaging, supported platforms, record interpretation |
 | [docs/architecture.md](docs/architecture.md) | Pipeline dataflow, coordinate spaces, engine internals, design contracts |
 | [docs/cuda.md](docs/cuda.md) | CUDA build, backend selection, device data layout, GPU tests and benchmarks |
 | [barrier_engine/README.md](barrier_engine/README.md) | Interior-point method, safeguards, crossover, polishing, results |

@@ -99,9 +99,33 @@ Each module has a clearly defined interface and data ownership boundary.
 - A section left as `std::nullopt`, or a stage time below zero, means that stage did not run. `stageSeconds.total` always equals `SolveResult::solveSeconds`.
 - Consumers: the CLI requests the report from its one `solver::solve()` call and feeds it to the terminal summary, `--verbose`, and the `optimsolver.solve.v1` JSON record (`classification`, `presolve`, `dispatch`, `validation`, `stage_seconds`). The JSON record is the machine-readable contract; nothing should parse the terminal output.
 
-### KAIRO Explorer Integration Boundary
+### Product architecture
 
-KAIRO Explorer (and any future UI or API layer) is a **consumer** of solver runs, never a participant in them.
+```text
+                     KAIRO
+                       │
+              ┌────────┴────────┐
+              │                 │
+         KAIRO Core          Interfaces
+              │                 │
+        ┌─────┴─────┐      ┌────┴─────┐
+        │           │      │          │
+     Engines   solve() API Desktop    CLI
+                          (Qt 6)   (optimsolver)
+                           │
+                 ┌─────────┼─────────┐
+               macOS    Windows    Linux
+```
+
+- **One solver implementation:** KAIRO Core (model IR, MPS reader, classification, presolve, dispatcher, engines, postsolve, validation).
+- **One execution path:** `solver::solve(model, options, &report)`. Both interfaces call it once per run.
+- **One structured record:** `optimsolver.solve.v1`, written only by `cli::writeJsonReport` (the `solve_report_json` library) from that call's `SolveResult` and `SolveReport`.
+- **One interpretation path:** the desktop's `desktop/src/record` readers. A live run, a saved run and an imported run all go through them.
+- There is **no web layer**. No browser, HTTP server or localhost port is involved, and building, running or packaging KAIRO needs no Python or JavaScript. Some optional core test scripts use Python. An earlier web Explorer prototype has been retired. Its real record fixtures now live in `desktop/tests/fixtures/records`.
+
+### Solve-record contract
+
+Any interface is a **consumer** of solver runs, never a participant in them.
 
 ```text
    model + SolverOptions
@@ -119,73 +143,56 @@ KAIRO Explorer (and any future UI or API layer) is a **consumer** of solver runs
           optimsolver.solve.v1 record
             ┌─────────┴──────────────┐
             ▼                        ▼
-   optimsolver solve --json     in-process C++ consumer
-   (process boundary)           (links solve_report_json)
-            │                        │
-            └──────────┬─────────────┘
-                       ▼
-               KAIRO Explorer
+   optimsolver solve --json     KAIRO Desktop (in-process,
+   (CLI, process boundary)      links solve_report_json)
 ```
 
-1. Explorer contains no solver logic.
-2. Explorer never invokes individual stages (`classify`, `Presolver::run`, `dispatch`, engines, postsolve). It requests one solve.
-3. Explorer never parses CLI terminal output. The terminal text is for people; the JSON record is the machine contract.
+1. Interfaces contain no solver logic.
+2. Interfaces never invoke individual stages (`classify`, `Presolver::run`, `dispatch`, engines, postsolve). They request one solve.
+3. Nothing parses CLI terminal output. The terminal text is for people; the JSON record is the machine contract.
 4. The solver core is the single source of truth. Every value in the record comes from the one `solver::solve()` call; the writer reads it and computes nothing.
 5. `SolveResult` is the outcome: status, point, duals, engine provenance, integrality verdict.
 6. `SolveReport` is the execution observability: classification, presolve summary, dispatch decision, stage timings, validation residuals.
-7. `optimsolver.solve.v1` is the serialization contract, written by the `solve_report_json` target (`cli/json_report.*`). It changes only additively; a breaking change would need a new schema id.
-8. Future UI or API layers consume this structured data. They can run `optimsolver solve <model> --json <file>` as a subprocess, or link `solve_report_json` and call `solver::solve()` in process. Both produce the same record from the same writer.
+7. `optimsolver.solve.v1` is the serialization contract. It changes only additively; a breaking change would need a new schema id.
 
-Not part of the contract yet:
-- Run identifiers and run history. A run is identified today by `instance.sha256`, `settings` and `solver.commit`/`build_type`. A run ID, if needed, belongs to whatever launches and stores runs (Explorer), not to the solver.
-- Wall-clock start and end timestamps. Only durations are recorded.
+Not part of the contract:
+- **Run identifiers.** A run is identified by `instance.sha256`, `settings` and `solver.commit`/`build_type`. The desktop gives each saved run a local UUID.
+- **Wall-clock timestamps.** Only durations are recorded.
 
-`tests/api/test_solve_contract.cpp` exercises this boundary without the CLI, and `tests/cli/test_solve_report_json.py` exercises it through the process.
+`tests/api/test_solve_contract.cpp` exercises the contract without the CLI, and `tests/cli/test_solve_report_json.py` exercises it through the process.
 
-### Explorer Application Boundary (`explorer/`)
+Every model the CLI or desktop accepts produces a record, including one the MPS reader rejects. That record has `invalid_model`, the reader's message in `termination.message`, and `instance.variables`/`constraints` set to null. Only an option value KAIRO rejects before reading the model leaves no record.
 
-```text
-Core               solver::solve(model, options, &report)
-  │                optimsolver solve model.mps --json record.json
-  ▼
-Explorer service   explorer/kairo_explorer (Python stdlib)
-  │                POST /api/solve → optimsolver.solve.v1 record; serves the UI
-  ▼
-Explorer UI        explorer/web (HTML/CSS/ES modules, no build, no dependencies)
-                   renders the record: solver pipeline, model analysis, presolve impact,
-                   then Run, Model, Presolve, Dispatch, Execution, Validation
-```
+### KAIRO Desktop (`desktop/`)
 
-| layer | owns | never does |
-|---|---|---|
-| Core | every solver fact: classification, presolve, dispatch, engines, validation, timings | know about HTTP or UI |
-| Explorer service | the request: shape checks, a private temp file, one `optimsolver` run, status → HTTP outcome, serving the UI's static files | interpret option values, edit the record, parse terminal text |
-| Explorer UI | presentation of one record; option form; one request per Run | compute solver facts, keep its own copy of the record's data, invent progress |
+A native **Qt 6 Widgets / C++17** application for macOS, Windows and Linux. It works locally and offline: it needs no browser or web server, makes no network calls and has no account.
 
-- **Core owns solver truth.** Every solver fact comes from one `solver::solve()` call.
-- **The application owns interaction and orchestration.** It validates the request's shape, writes the MPS text to a private temporary directory, and runs `optimsolver` as an argument list (no shell) with `--json`. It returns the record unchanged and maps `termination.status` to an HTTP outcome. Option values are passed to KAIRO, which stays authoritative.
-- **The UI owns presentation.** It renders the record's fields directly, with `null` shown as "Not run" or "Unknown", never 0. The selected engine (`dispatch.engine`) and the executed engine (`dispatch.executed_engine`) are shown separately.
-- **The solver pipeline view** is `buildPipeline(record)`: a pure mapping from the record to a state for each stage (Model → Classification → Presolve → Dispatch → Engine → Postsolve → Validation → Result). Each state is read from the field that records whether that stage ran, not inferred from the final status. It marks where the run ended. The mapping table is in `explorer/README.md`.
-- **Dispatch decision / execution** (`readDispatch`) read the decision structurally from `dispatch.*`, `settings.requested_engine`, `compute_backend.*` and `stage_seconds.*`.
-  - `dispatch.reason` is the dispatcher's authoritative sentence and is shown verbatim, never parsed.
-  - The selected and executed engines stay separate, and the pseudo-engines (`infeasible`, `trivial`, `unsupported`) are shown as outcomes.
-  - Engine time is labelled execution only when an engine executed; otherwise it is engine-path time.
-  - When a valid, classified model is refused by the engine the dispatcher selected, KAIRO's status is `invalid_model`. The Explorer service reports outcome `engine_rejected` instead of `invalid_model`, and the record and its status are unchanged.
-  - The Explorer does not reconstruct dispatcher policy (candidates, alternatives, rules or thresholds).
-- **Model analysis / presolve impact** (`buildModelAnalysis`, `buildPresolveImpact`) are likewise pure readers of `classification`, `instance` and `presolve`. The only arithmetic is the reduction percentage between two `presolve.*` values, and it is withheld when presolve proved infeasibility.
-- **The CLI is another consumer** of the same core and record.
-- The service serves the UI from the same origin as the API, so no CORS is needed and no other site can call the unauthenticated API from a browser. Static files come from an allowlist built at startup.
-- **Explorer contains no optimization algorithms** and never parses terminal output.
+- `desktop/src/core/KairoSession` is the only code that touches the solver. It calls the core in-process (`mps::MpsReader` → `Model::validate()` → `solver::solve(model, options, &report)`) and has `cli::writeJsonReport` serialize the result in memory. The per-run order is the CLI's, so unreadable or invalid models produce the same record shape (no report, `dispatch: null`).
+- `desktop/src/record` (Qt Core only) turns a record into what is shown:
+  - `RecordReaders`: result, evidence, pipeline, model analysis, presolve impact, dispatch;
+  - `Comparison`: two runs side by side.
 
-Why a process boundary rather than an in-process C++ server: the repository has no HTTP or UI dependency, and the CLI's `--json` record is already the tested serialization contract. A stdlib Python service adds no dependency and puts no HTTP code into the core. It can be replaced by an in-process service linking `solve_report_json` later without changing the contract. Request format, outcome table, frontend field map and security rules are in `explorer/README.md`.
+  They are pure readers:
+  - the only arithmetic is the presolve reduction percentage and stated differences between two recorded values;
+  - **`dispatch.reason` is shown verbatim**;
+  - the selected and executed engines stay separate;
+  - the pseudo-engines (`infeasible`, `trivial`, `unsupported`) are outcomes;
+  - engine time is "execution" only when an engine executed, and otherwise "engine path".
+- **Trust wording** never exceeds the record:
+  - KAIRO's own validation (`validation.*`, `self_reported.*`) is the only source of *Checked*. Claims without a recorded certificate, bound or gap read *Reported by engine* or *Proved by presolve*.
+  - `integrality_respected: false` on an integer model turns `optimal` into "Optimal for the continuous relaxation", and an integer optimum is "Optimal — according to the solver".
+  - With no solution point, nothing is shown as validated.
+  - The words "certified", "guaranteed" and "proven optimal" are never used.
+- `desktop/src/history/RunStore` keeps saved runs as local JSON files (`QStandardPaths`, format `kairo.desktop.saved_run.v1`): the unchanged record plus a few local facts, and never the model text.
+  - **Export** writes the record unchanged.
+  - **Import** checks the record's shape and stores it marked imported. It never runs the solver or anything else.
+- **Comparison** treats runs as the same model only when their recorded input SHA-256 values match. With different hashes, objectives, residuals and presolve reductions are not compared. Values are stated, never ranked.
+- `desktop/src/ui` holds widgets only. Build, packaging and platform status are in `desktop/README.md`.
 
-Every model the CLI accepts now produces a record, including one the MPS reader rejects (`invalid_model`, the reader's message in `termination.message`, `instance.variables`/`constraints` null). So the application never reads stderr to learn why a solve failed. Only an option value KAIRO rejects before reading the model leaves no record; that text is passed through unparsed.
-
-**Live progress (not implemented).** `solver::solve()` is synchronous and reports only after it finishes.
+**Live progress and cancellation (not implemented).** `solver::solve()` is synchronous and reports only after it finishes, so the desktop shows only "Running KAIRO…".
 - Stage-level events (classified, presolved, dispatched, engine started or finished, validated) need no redesign: an optional observer in `SolverOptions`, invoked at the orchestrator's existing stage boundaries, as the report already is.
-- Engine-level progress (iterations, gap, incumbents) is the real obstacle. None of the affine engines (PDLP, dual simplex, barrier, ADMM, branch-and-cut, MIQP) exposes an iteration hook today. Only the NLP solver has an iteration callback. Each engine loop would need one, and multithreaded tree search needs a thread-safe channel.
-- Across the process boundary, events need a stream separate from the human stdout, for example JSON lines on a dedicated flag.
-- There is no cancellation API besides the time limit. The process boundary can still stop a run by terminating it.
+- Engine-level progress (iterations, gap, incumbents) is the real obstacle. None of the affine engines (PDLP, dual simplex, barrier, ADMM, branch-and-cut, MIQP) exposes an iteration hook today. Only the NLP solver has an iteration callback.
+- There is no cancellation API besides the time limit.
 
 ---
 

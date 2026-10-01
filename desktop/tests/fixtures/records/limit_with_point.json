@@ -1,0 +1,142 @@
+{
+ "schema": "optimsolver.solve.v1",
+ "instance": {
+  "path": "model.mps",
+  "sha256": "fef30838ffb86bdf2110d025b6c327592248cbcdb1140079a5a9fa899dc19599",
+  "variables": 2,
+  "constraints": 3,
+  "objective_sense": "min"
+ },
+ "solver": {
+  "name": "optimsolver",
+  "commit": "9cb4f368adbc717134b930f3b1ceb1e6680e617e",
+  "build_type": "Release"
+ },
+ "compute_backend": {
+  "requested": "auto",
+  "executed": "cpu",
+  "requested_device": 0,
+  "executed_device": null,
+  "reason": "auto -> cpu: 6 nonzeros is below cudaNonzeroThreshold (1000000)"
+ },
+ "settings": {
+  "requested_engine": "pdlp",
+  "time_limit_seconds": 1e-06,
+  "tolerance": 1e-08,
+  "thread_count": 1
+ },
+ "classification": {
+  "problem_class": "LP",
+  "num_binary": 0,
+  "num_integer": 0,
+  "num_continuous": 2,
+  "nonzeros": 6,
+  "coef_range_ratio": 2,
+  "num_rows": 3,
+  "num_columns": 2,
+  "has_network_structure": false,
+  "has_big_m": false,
+  "max_big_m": 0,
+  "has_set_partitioning": false,
+  "symmetric_groups": 0
+ },
+ "presolve": {
+  "infeasible": false,
+  "converged": true,
+  "reduced_variables": 2,
+  "reduced_constraints": 3,
+  "transformations": 4,
+  "original_variables": 2,
+  "original_constraints": 3,
+  "original_nonzeros": 6,
+  "reduced_nonzeros": 6,
+  "transformations_by_type": {
+   "remove_variable": 0,
+   "remove_constraint": 0,
+   "fix_variable": 0,
+   "substitute_variable": 0,
+   "tighten_lower_bound": 0,
+   "tighten_upper_bound": 4
+  }
+ },
+ "dispatch": {
+  "invoked": true,
+  "engine": "pdlp",
+  "reason": "engine forced by the caller",
+  "executed_engine": "pdlp"
+ },
+ "validation": {
+  "reduced_space": {
+   "passed": true,
+   "status": "success",
+   "failure": null,
+   "max_bound_residual": 0,
+   "max_constraint_residual": 0,
+   "max_bound_residual_scaled": 0,
+   "max_constraint_residual_scaled": 0,
+   "objective": 0,
+   "engine_reported_objective": 0
+  },
+  "original_space": {
+   "passed": true,
+   "status": "success",
+   "failure": null,
+   "max_bound_residual": 0,
+   "max_constraint_residual": 0,
+   "max_bound_residual_scaled": 0,
+   "max_constraint_residual_scaled": 0,
+   "objective": 0,
+   "duals_requested": false
+  }
+ },
+ "termination": {
+  "status": "limit_reached",
+  "message": "Time limit reached",
+  "dispatched_engine": "pdlp",
+  "executed_engine": "pdlp",
+  "engine_reason": "engine forced by the caller"
+ },
+ "objective": 0,
+ "dual_bound": null,
+ "mip_gap": null,
+ "primal": [
+  0,
+  0
+ ],
+ "duals": null,
+ "reduced_costs": null,
+ "duals_unavailable_reason": "Dual sensitivities require an optimal solution.",
+ "self_reported": {
+  "max_bound_residual": 0,
+  "max_constraint_residual": 0,
+  "max_dual_residual": null,
+  "max_integrality_violation": 0,
+  "integrality_respected": true
+ },
+ "stage_seconds": {
+  "parse": 0.000124333,
+  "presolve": 9.792e-06,
+  "solve": 5.6458e-05,
+  "postsolve": 2.959e-06,
+  "validation": 2.125e-06,
+  "classification": 8.125e-06,
+  "dispatch": 1.25e-07,
+  "engine": 2.6709e-05,
+  "reduced_validation": 1.209e-06,
+  "total": 5.2458e-05
+ },
+ "work": {
+  "iterations": null,
+  "nodes": null,
+  "solve_seconds": 5.2458e-05
+ },
+ "variable_names": [
+  "X",
+  "Y"
+ ],
+ "constraint_names": [
+  "C1",
+  "C2",
+  "C3"
+ ]
+}

@@ -3,8 +3,8 @@
 // Machine-readable record of one solve: optimsolver.solve.v1.
 //
 // This is the serialization contract for every consumer of solver runs -- the
-// benchmark harness and, later, KAIRO Explorer (see docs/architecture.md,
-// "KAIRO Explorer Integration Boundary"). Built as its own target,
+// benchmark harness and KAIRO Desktop (see docs/architecture.md,
+// "Solve-record contract"). Built as its own target,
 // solve_report_json, so a consumer does not link the terminal application.
 // The writer is a pure mapping of the SolveResult and SolveReport it is
 // given; it never classifies, presolves, dispatches or validates.

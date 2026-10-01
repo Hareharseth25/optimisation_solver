@@ -1,0 +1,160 @@
+# KAIRO Desktop: build and test on macOS, Windows and Linux.
+#
+# Qt comes from the official Qt online archives (aqtinstall via
+# install-qt-action), not from a system package manager, so the same Qt
+# version is used everywhere and the deployed application carries no
+# build-machine paths.
+#
+# The desktop tests are real: kairo_desktop_tests solves repository models
+# through KAIRO Core in-process, and the desktop_* CTest cases drive the KAIRO
+# application itself (-platform offscreen): solve, export, import, compare.
+
+name: desktop
+
+on:
+  push:
+    paths:
+      - "desktop/**"
+      - "cli/**"
+      - "src/**"
+      - "include/**"
+      - "*_engine/**"
+      - "cuda_support/**"
+      - "CMakeLists.txt"
+      - "benchmarks/instances/known/**"
+      - "tests/cli/**"
+      - ".github/workflows/desktop.yml"
+  pull_request:
+    paths:
+      - "desktop/**"
+      - "cli/**"
+      - "src/**"
+      - "include/**"
+      - "*_engine/**"
+      - "cuda_support/**"
+      - "CMakeLists.txt"
+      - "benchmarks/instances/known/**"
+      - "tests/cli/**"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-14]
+    env:
+      BUILD_DIR: ${{ github.workspace }}/build
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      # Byte-identical model files on every OS (the record holds their SHA-256).
+      - name: Keep line endings as committed
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - name: Linux packages for Qt (GL, fonts, xcb) and a virtual display
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libegl1 libxkbcommon0 libxkbcommon-x11-0 \
+            libfontconfig1 libdbus-1-3 fonts-dejavu-core xvfb \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+            libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1
+
+      - uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.*"
+          cache: true
+
+      - name: Configure
+        shell: bash
+        # macOS: a universal (arm64 + x86_64) app for macOS 12 and later,
+        # matching the official Qt 6.8 binaries.
+        run: >
+          cmake -S . -B "$BUILD_DIR" -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DKAIRO_DESKTOP_DEPLOY=ON
+          ${{ runner.os == 'macOS' && '-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"' || '' }}
+
+      - name: Build desktop, its tests and the CLI
+        shell: bash
+        run: cmake --build "$BUILD_DIR" --parallel --target KAIRO kairo_desktop_tests optimsolver
+
+      - name: Desktop tests
+        shell: bash
+        run: ctest --test-dir "$BUILD_DIR" -R '^desktop_' --output-on-failure
+
+      - name: Install with the Qt runtime (macdeployqt / windeployqt / Linux deploy)
+        shell: bash
+        run: cmake --install "$BUILD_DIR" --prefix "${{ github.workspace }}/dist"
+
+      - name: macOS bundle has no build-machine paths
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app="${{ github.workspace }}/dist/KAIRO.app"
+          codesign --verify --deep --strict "$app"
+          bad=0
+          while IFS= read -r f; do
+            if file -b "$f" | grep -q Mach-O; then
+              if otool -l "$f" | grep -E '^\s+(name|path) /' | grep -vE '/System/|/usr/lib/'; then bad=1; fi
+            fi
+          done < <(find "$app" -type f)
+          exit $bad
+
+      - name: Installed application runs (native platform plugin)
+        shell: bash
+        # The deployed application carries only the native platform plugin
+        # (cocoa / windows / xcb), so the offscreen default is not used here.
+        env:
+          QT_QPA_PLATFORM: ""
+        run: |
+          model="$GITHUB_WORKSPACE/tests/cli/presolve_reduction.mps"
+          case "$RUNNER_OS" in
+            macOS)   run=("$GITHUB_WORKSPACE/dist/KAIRO.app/Contents/MacOS/KAIRO") ;;
+            Windows) run=("$GITHUB_WORKSPACE/dist/bin/KAIRO.exe") ;;
+            Linux)   run=(xvfb-run -a "$GITHUB_WORKSPACE/dist/bin/KAIRO") ;;
+          esac
+          "${run[@]}" --capture "$model" --out capture.png --runs-dir runs | tee capture.txt
+          grep -q "result:completed" capture.txt
+
+      - name: Release artifact
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          case "$RUNNER_OS" in
+            macOS)
+              hdiutil create -volname KAIRO -srcfolder dist/KAIRO.app -ov -format UDZO artifacts/KAIRO-0.1.0-macos.dmg ;;
+            Windows)
+              # bin/ holds KAIRO.exe, the Qt DLLs and plugins, and the MSVC runtime.
+              (cd dist && 7z a ../artifacts/KAIRO-0.1.0-windows-x64.zip bin) ;;
+            Linux)
+              (cd artifacts && "$GITHUB_WORKSPACE/desktop/packaging/linux/make_appimage.sh" "$GITHUB_WORKSPACE/dist")
+              # The AppImage itself must start and solve.
+              QT_QPA_PLATFORM= xvfb-run -a artifacts/KAIRO-0.1.0-x86_64.AppImage --appimage-extract-and-run \
+                --capture "$GITHUB_WORKSPACE/tests/cli/presolve_reduction.mps" --out appimage.png --runs-dir runs-ai \
+                | grep -q "result:completed" ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kairo-desktop-${{ runner.os }}
+          path: |
+            artifacts
+            capture.png
+          if-no-files-found: warn

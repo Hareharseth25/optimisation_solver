@@ -300,8 +300,8 @@ add_executable(test_solve_report tests/solver/test_solve_report.cpp)
 target_link_libraries(test_solve_report PRIVATE solver_orchestrator)
 add_test(NAME test_solve_report COMMAND test_solve_report)
 
-# The KAIRO Explorer integration boundary, used the way an external consumer
-# would: solver::solve(model, options, &report), then the solve.v1 writer.
+# The solve-record contract, used the way an external consumer (such as KAIRO
+# Desktop) would: solver::solve(model, options, &report), then the solve.v1 writer.
 # Deliberately links no CLI target -- a consumer needs neither the terminal
 # application nor its text output.
 add_executable(test_solve_contract tests/api/test_solve_contract.cpp)
@@ -317,7 +317,7 @@ add_test(NAME test_milp_enumeration COMMAND test_milp_enumeration)
 
 # The optimsolver.solve.v1 / optimsolver.nlp.v1 record writer: a pure mapping
 # from (request echo, SolveResult, SolveReport) to JSON. Its own target so any
-# consumer of solver runs -- the CLI today, KAIRO Explorer later -- can produce
+# consumer of solver runs -- the CLI and KAIRO Desktop -- can produce
 # or test the serialized contract without linking the terminal application.
 # It runs no solver stage; it only reads what solver::solve() returned.
 add_library(solve_report_json
@@ -469,31 +469,22 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME solve_report_json COMMAND ${Python3_EXECUTABLE}
         ${PROJECT_SOURCE_DIR}/tests/cli/test_solve_report_json.py $<TARGET_FILE:optimsolver>)
     set_tests_properties(solve_report_json PROPERTIES TIMEOUT 180)
-    # KAIRO Explorer application boundary (explorer/): standard library only.
-    add_test(NAME explorer_service COMMAND ${Python3_EXECUTABLE}
-        ${PROJECT_SOURCE_DIR}/explorer/tests/test_service.py $<TARGET_FILE:optimsolver>)
-    set_tests_properties(explorer_service PROPERTIES TIMEOUT 300)
 endif()
 
-# KAIRO Explorer UI (explorer/web): plain ES modules, no npm dependencies.
-# Unit tests use Node's built-in runner when Node is available. The browser
-# end-to-end test needs Chrome as well, so it is opt-in.
-find_program(NODE_EXECUTABLE node)
-if(NODE_EXECUTABLE)
-    add_test(NAME explorer_ui COMMAND ${NODE_EXECUTABLE} --test "tests/*.test.js"
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/explorer/web)
-    set_tests_properties(explorer_ui PROPERTIES TIMEOUT 120)
-endif()
-option(EXPLORER_BROWSER_TESTS "Run the Explorer UI end-to-end in headless Chrome (requires Node and Chrome)" OFF)
-if(EXPLORER_BROWSER_TESTS)
-    if(NOT NODE_EXECUTABLE OR NOT Python3_Interpreter_FOUND)
-        message(FATAL_ERROR "EXPLORER_BROWSER_TESTS requires Node and Python")
+# KAIRO Desktop (desktop/): native Qt 6 application, in-process client of
+# KAIRO Core. Built when Qt 6 (Widgets, Concurrent) is available; without Qt
+# the solver, CLI and tests build exactly as before.
+option(KAIRO_BUILD_DESKTOP "Build the KAIRO Desktop application (requires Qt 6)" ON)
+if(KAIRO_BUILD_DESKTOP)
+    find_package(Qt6 6.5 COMPONENTS Core Gui Widgets Concurrent QUIET)
+    if(Qt6_FOUND)
+        message(STATUS "KAIRO Desktop: building with Qt ${Qt6_VERSION}")
+        add_subdirectory(desktop)
+    else()
+        message(STATUS "KAIRO Desktop: Qt 6 not found; skipping the desktop application")
     endif()
-    add_test(NAME explorer_ui_browser COMMAND ${NODE_EXECUTABLE}
-        ${PROJECT_SOURCE_DIR}/explorer/web/tests/e2e/browser.e2e.js --binary $<TARGET_FILE:optimsolver>)
-    set_tests_properties(explorer_ui_browser PROPERTIES TIMEOUT 300
-        ENVIRONMENT "PYTHON=${Python3_EXECUTABLE}" LABELS browser)
 endif()
+
 # Offline benchmark infrastructure tests have no downloaded-data dependency.
 option(QP_REFERENCE_TESTS "Run independent OSQP comparisons (requires numpy/scipy/osqp)" OFF)
 if(QP_REFERENCE_TESTS AND NOT Python3_Interpreter_FOUND)

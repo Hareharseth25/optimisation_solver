@@ -1,4 +1,4 @@
-// The KAIRO Explorer integration boundary, exercised the way an external
+// The solve-record contract (consumed by KAIRO Desktop), exercised the way an external
 // consumer would: build a model, call solver::solve(model, options, &report)
 // once, serialize the outcome with the optimsolver.solve.v1 writer, and read
 // the structured record back. No CLI, no terminal text, no MPS reader.
