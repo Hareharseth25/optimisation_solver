@@ -35,10 +35,10 @@ test('LP: optimal run with every section populated from the record', () => {
 
 test('selected and executed engines are rendered separately', () => {
   const { tree } = render('lp_optimal');
-  assert.equal(role(tree, 'selected-engine'), 'Selected by dispatcher dual simplex');
+  assert.equal(role(tree, 'selected-engine'), 'Selected engine dual simplex');
   assert.equal(role(tree, 'executed-engine'), 'Executed dual simplex');
   assert.match(field(tree, 'reason'), /small enough for the dual simplex/);
-  assert.equal(field(tree, 'invoked'), 'Dispatcher invoked');
+  assert.equal(field(tree, 'invoked'), 'Invoked');
 });
 
 test('MILP: branch-and-cut, binaries and integrality verdict', () => {
@@ -50,7 +50,8 @@ test('MILP: branch-and-cut, binaries and integrality verdict', () => {
   assert.match(text(section(tree, 'model')), /Maximize/);
   assert.match(text(section(tree, 'validation')), /Integrality Respected max violation 0/);
   assert.match(text(section(tree, 'validation')), /Dual sensitivities are unavailable for integer models/);
-  assert.match(text(section(tree, 'run')), /Nodes 1/);
+  assert.match(text(section(tree, 'execution')), /Nodes 1/);
+  assert.doesNotMatch(text(section(tree, 'run')), /Nodes/, 'work counters live in Execution only');
 });
 
 test('QP: routed to the QP engine', () => {
@@ -64,8 +65,9 @@ test('presolve-proved infeasibility: no engine shown as executed, later stages n
   const { tree, result } = render('presolve_infeasible');
   assert.equal(summarize(result.body, result.httpStatus).detail,
     'Proved by presolve. The dispatcher was not invoked and no engine ran.');
-  assert.equal(field(tree, 'invoked'), 'Dispatcher not invoked');
-  assert.equal(role(tree, 'selected-engine'), 'Settled before dispatch infeasible');
+  assert.equal(field(tree, 'invoked'), 'Not invoked');
+  assert.equal(role(tree, 'selected-engine'),
+    'Outcome before dispatch infeasible Presolve settled the solve; no engine is needed.');
   assert.equal(role(tree, 'executed-engine'), 'Executed Nothing executed');
   assert.equal(field(tree, 'engine'), 'None');
   assert.equal(field(tree, 'objective'), 'None');
@@ -84,20 +86,22 @@ test('unsupported: dispatcher chose, nothing executed', () => {
   assert.equal(result.httpStatus, 422);
   const summary = findAll(tree, (n) => n.attrs['data-view'] === 'summary')[0];
   assert.equal(summary.attrs.role, 'alert');
-  assert.match(text(summary), /^Unsupported unsupported · HTTP 422 non-convex quadratic objective/);
-  assert.equal(role(tree, 'selected-engine'), 'Dispatcher decision unsupported');
+  assert.match(text(summary), /^No suitable engine unsupported · HTTP 422 non-convex quadratic objective/);
+  assert.equal(role(tree, 'selected-engine'),
+    'Dispatch outcome no suitable engine No KAIRO engine can solve the model as posed.');
   assert.equal(role(tree, 'executed-engine'), 'Executed Nothing executed');
-  assert.match(text(section(tree, 'dispatch')), /No KAIRO engine can solve this model as posed, so none ran\./);
-  assert.doesNotMatch(text(section(tree, 'dispatch')), /chose/);
+  assert.equal(field(tree, 'refusal'), '', 'no engine was selected, so there is no refusal');
   assert.match(text(section(tree, 'execution')), /executed none/);
 });
 
 test('invalid model: every solver section says Not run, dimensions stay real', () => {
   const { tree } = render('invalid_model');
   assert.match(text(tree), /^Invalid model invalid_model · HTTP 422 model failed structural validation/);
-  for (const name of ['presolve', 'dispatch', 'validation']) {
+  for (const name of ['presolve', 'validation']) {
     assert.equal(notRuns(section(tree, name)).length, 1, `${name} not run`);
   }
+  assert.equal(field(tree, 'invoked'), 'Not reached');
+  assert.equal(role(tree, 'selected-engine'), '', 'no selection shown when dispatch never ran');
   assert.match(text(section(tree, 'model')), /Classification Not run — KAIRO did not accept the model/);
   assert.match(text(section(tree, 'model')), /Variables 1/);
   assert.match(text(section(tree, 'execution')), /Not run — no pipeline stage ran/);
@@ -121,7 +125,7 @@ test('limit reached without a validated point', () => {
 
 test('forced engine shows the request and the forced reason', () => {
   const { tree } = render('forced_pdlp');
-  assert.match(text(section(tree, 'dispatch')), /Engine requested: pdlp/);
+  assert.equal(field(tree, 'request-mode'), 'Forced by caller: pdlp');
   assert.equal(field(tree, 'reason'), 'engine forced by the caller');
   assert.match(text(section(tree, 'execution')), /requested cpu → executed cpu/);
 });
@@ -172,7 +176,7 @@ test('an engine chosen but refused before running is called out by name', () => 
   body.record.dispatch.executed_engine = null;
   body.record.termination.executed_engine = null;
   const tree = renderResult({ kind: 'response', httpStatus: 422, body });
-  assert.equal(role(tree, 'selected-engine'), 'Selected by dispatcher pdlp');
+  assert.equal(role(tree, 'selected-engine'), 'Selected engine pdlp');
   assert.equal(role(tree, 'executed-engine'), 'Executed Nothing executed');
-  assert.match(text(section(tree, 'dispatch')), /The dispatcher chose pdlp, but it did not run\./);
+  assert.match(field(tree, 'refusal'), /^Execution refusal Why pdlp did not run/);
 });

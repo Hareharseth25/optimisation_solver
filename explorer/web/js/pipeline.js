@@ -23,6 +23,7 @@
 
 import { h } from './vdom.js';
 import * as f from './format.js';
+import { readDispatch, PSEUDO_ENGINES } from './dispatch.js';
 
 export const STAGES = ['model', 'classification', 'presolve', 'dispatch', 'engine', 'postsolve', 'validation', 'result'];
 
@@ -53,7 +54,7 @@ const ENGINE_STATES = {
   invalid_model: ['failed', 'refused the model'],
 };
 
-const name = (engine) => f.words(engine);
+const name = (engine) => PSEUDO_ENGINES[engine]?.label ?? f.words(engine);
 const plural = (n, one, many) => `${f.count(n)} ${n === 1 ? one : many}`;
 
 function stage(id, label, target, state, stateLabel, lines = [], seconds = null, timeLabel = null) {
@@ -150,8 +151,10 @@ export function buildPipeline(record) {
       st.reduced_validation, 'reduced check'));
   }
 
-  // RESULT
-  const [resultState, resultLabel] = RESULT_STATES[term.status] ?? ['failed', f.words(term.status)];
+  // RESULT -- a valid model the selected engine refused is not an "invalid model".
+  const [resultState, resultLabel] = readDispatch(record).engineRejectedModel
+    ? ['failed', 'engine rejected model']
+    : RESULT_STATES[term.status] ?? ['failed', f.words(term.status)];
   stages.push(stage('result', 'Result', 'run', resultState, resultLabel,
     [f.isAbsent(record.objective) ? 'no point returned' : `objective ${f.real(record.objective)}`], st.total, 'total'));
 

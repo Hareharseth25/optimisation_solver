@@ -36,6 +36,11 @@ CASES = {
     "structured_milp": ("tests/cli/structured_milp.mps", {}),
     "network_flow": ("tests/cli/network_flow_lp.mps", {}),
     "no_constraints": ("tests/cli/no_constraints_lp.mps", {}),
+    # A valid MILP forced onto PDLP: the dispatcher honours the request, the
+    # engine refuses the model (KAIRO status invalid_model).
+    "forced_incompatible": ("tests/cli/knapsack_milp.mps", {"engine": "pdlp"}),
+    # A forced alias: the request keeps the caller's spelling.
+    "forced_alias": ("tests/cli/simple_lp.mps", {"engine": "ipm"}),
 }
 
 

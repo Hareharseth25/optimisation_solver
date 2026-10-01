@@ -166,6 +166,12 @@ Explorer UI        explorer/web (HTML/CSS/ES modules, no build, no dependencies)
 - **The application owns interaction and orchestration.** It validates the request's shape, writes the MPS text to a private temporary directory, and runs `optimsolver` as an argument list (no shell) with `--json`. It returns the record unchanged and maps `termination.status` to an HTTP outcome. Option values are passed to KAIRO, which stays authoritative.
 - **The UI owns presentation.** It renders the record's fields directly, with `null` shown as "Not run" or "Unknown", never 0. The selected engine (`dispatch.engine`) and the executed engine (`dispatch.executed_engine`) are shown separately.
 - **The solver pipeline view** is `buildPipeline(record)`: a pure mapping from the record to a state for each stage (Model → Classification → Presolve → Dispatch → Engine → Postsolve → Validation → Result). Each state is read from the field that records whether that stage ran, not inferred from the final status. It marks where the run ended. The mapping table is in `explorer/README.md`.
+- **Dispatch decision / execution** (`readDispatch`) read the decision structurally from `dispatch.*`, `settings.requested_engine`, `compute_backend.*` and `stage_seconds.*`.
+  - `dispatch.reason` is the dispatcher's authoritative sentence and is shown verbatim, never parsed.
+  - The selected and executed engines stay separate, and the pseudo-engines (`infeasible`, `trivial`, `unsupported`) are shown as outcomes.
+  - Engine time is labelled execution only when an engine executed; otherwise it is engine-path time.
+  - When a valid, classified model is refused by the engine the dispatcher selected, KAIRO's status is `invalid_model`. The Explorer service reports outcome `engine_rejected` instead of `invalid_model`, and the record and its status are unchanged.
+  - The Explorer does not reconstruct dispatcher policy (candidates, alternatives, rules or thresholds).
 - **Model analysis / presolve impact** (`buildModelAnalysis`, `buildPresolveImpact`) are likewise pure readers of `classification`, `instance` and `presolve`. The only arithmetic is the reduction percentage between two `presolve.*` values, and it is withheld when presolve proved infeasibility.
 - **The CLI is another consumer** of the same core and record.
 - The service serves the UI from the same origin as the API, so no CORS is needed and no other site can call the unauthenticated API from a browser. Static files come from an allowlist built at startup.

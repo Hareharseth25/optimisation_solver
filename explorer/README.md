@@ -36,6 +36,21 @@ Then open **http://127.0.0.1:8765/**. The same process serves the UI and the API
 3. **Run:** the button disables itself and the page says *Running KAIRO…*. There is no progress bar, because KAIRO reports nothing until it finishes.
 4. **Report:** the result headline, then the **solver pipeline**, then **Model analysis** and **Presolve impact**, then the detailed Run, Model, Presolve, Dispatch, Execution and Validation sections, all read from the returned record.
 
+### Dispatch decision and execution
+
+The **Dispatch decision** section answers *why*, read top to bottom: Request → Dispatcher → Why → Selected → Executed. The **Execution** section answers *what actually happened*: engine, backend, termination, timing. Both read `js/dispatch.js` (`readDispatch(record)`), a structural reader with no dispatcher policy in it.
+
+- **`dispatch.reason` is authoritative.** It is the dispatcher's own sentence, shown verbatim as "Why — KAIRO dispatcher". The Explorer never parses it into categories and never builds an explanation from classification fields.
+- **Selected vs executed.** `dispatch.engine` (selected) and `dispatch.executed_engine` (what ran; null → *Nothing executed*) are always shown separately and never assumed equal.
+- **Forced vs automatic.** Read from `settings.requested_engine`: null means automatic; otherwise it is *Forced by caller*, shown in the caller's own spelling (`ipm` stays `ipm` while the selected engine is `barrier`). The request is not translated into an engine name.
+- **Pseudo-engines.** `infeasible` (early exit before dispatch), `trivial` (the solution is read from variable bounds; no iterative engine runs) and `unsupported` (no suitable engine) are dispatch outcomes, displayed as outcomes rather than engines.
+- **Selected but not executed.** The explanation is `termination.message`, labelled as the execution path's refusal and kept apart from the dispatcher's reason. It is a *backend refusal* when `compute_backend.requested` is `cuda` and nothing ran. It is *engine rejected the model* when KAIRO's status is `invalid_model` for a model that was accepted and classified.
+- **Engine-path vs execution time.** `stage_seconds.engine` is labelled *Engine execution* only when an engine executed. Otherwise it is *Engine path (no engine executed)*: the engine path was entered and refused before solving.
+- **Dispatch state.** When `dispatch` is null the dispatcher was not reached. The `termination.dispatched_engine` / `executed_engine` / `engine_reason` copies are not read, because they hold default values when no solve ran.
+- **Reduced-model evidence.** The panel shows `presolve.reduced_*`, the model the dispatcher was given, as observed data next to the reason. It is not used to second-guess the decision.
+
+The Explorer does not reconstruct dispatcher policy: no candidate engines, no rejected alternatives, no rule IDs, no thresholds. Those are not in the record, and inferring them would let the UI disagree with KAIRO.
+
 ### Model analysis and presolve impact
 
 Both cards are pure transformations of the record (`js/analysis.js`). They never re-read the MPS, classify, or run presolve.
@@ -118,6 +133,7 @@ Response:
 |---|---|---|
 | `completed` | 200 | `termination.status` is `optimal`, `infeasible`, `unbounded` or `limit_reached`; all are answers |
 | `invalid_model` | 422 | `invalid_model`: unreadable MPS (the reader's reason is in `termination.message`) or a structurally invalid model |
+| `engine_rejected` | 422 | `invalid_model`, but the model was accepted and classified, the dispatcher selected a real engine, and that engine refused it (e.g. a valid MILP forced onto PDLP). The **model is not invalid**; the record keeps KAIRO's status and message |
 | `unsupported` | 422 | `unsupported`: no engine can solve it as posed, or an explicit CUDA request cannot be honoured |
 | `solver_failure` | 500 | `numerical_failure` |
 | `bad_request` | 400 | malformed request; nothing was run, `record` is null |
@@ -179,6 +195,7 @@ A solve is request → response. See `docs/architecture.md` ("Explorer Applicati
 | `js/report.js` | pure render functions over the `optimsolver.solve.v1` record |
 | `js/pipeline.js` | `buildPipeline(record)` (record → stage states, pure) and its rendering |
 | `js/analysis.js` | `buildModelAnalysis(record)`, `buildPresolveImpact(record)` (pure) and their rendering |
+| `js/dispatch.js` | `readDispatch(record)`: dispatch state, request mode, selected/executed, pseudo-engines, refusal, engine-time kind (structural only) |
 | `js/format.js` | number, time and residual formatting; `null` → "Not run" / "Unknown", never 0 |
 | `js/vdom.js` | tiny `h()` tree, mounted with `textContent` only (no `innerHTML`) |
 

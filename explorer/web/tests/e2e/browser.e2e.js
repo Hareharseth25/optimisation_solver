@@ -191,6 +191,15 @@ async function main() {
                  terminal: document.querySelector('.stage-terminal')?.dataset.stageId ?? null,
                  pipelineSummary: t('[data-field=pipeline-summary]'),
                  analysisClass: t('[data-field=analysis-class]'),
+                 headline: t('.banner-title'),
+                 requestMode: t('[data-field=request-mode]'),
+                 invoked: t('[data-field=invoked]'),
+                 reason: t('[data-field=reason]'),
+                 refusal: t('[data-field=refusal]'),
+                 refusalMessage: t('[data-field=refusal-message]'),
+                 executionEngine: t('[data-field=execution-engine]'),
+                 executionBackend: t('[data-field=execution-backend]'),
+                 engineStageLabel: t('[data-stage=engine] th'),
                  analysisSense: t('[data-field=analysis-sense]'),
                  analysisVariables: t('[data-field=analysis-variables]'),
                  composition: t('[data-field=analysis-composition]'),
@@ -212,7 +221,12 @@ async function main() {
     let page = await solve('01-lp', 'tests/cli/presolve_reduction.mps');
     check(page.summary.startsWith('Optimal'), `LP summary: ${page.summary}`);
     check(page.objective === '28' && page.problemClass === 'LP', 'LP objective/class');
-    check(page.selected === 'selected by dispatcher dual simplex' && page.executed === 'executed dual simplex', 'LP engines');
+    check(page.selected === 'selected engine dual simplex' && page.executed === 'executed dual simplex', 'LP engines');
+    check(page.requestMode === 'Automatic — the dispatcher chooses' && page.invoked === 'Invoked' &&
+      page.reason.startsWith('small enough for the dual simplex'), `LP dispatch: ${page.requestMode} / ${page.reason}`);
+    check(page.engineStageLabel === 'Engine execution' && page.executionEngine === 'dual simplex',
+      `LP execution: ${page.engineStageLabel} / ${page.executionEngine}`);
+    check(page.refusal === null, 'LP: no refusal block');
     check(page.notRun === 0, 'LP: every stage ran');
     const ALL_DONE = 'model:completed classification:completed presolve:completed dispatch:completed ' +
       'engine:completed postsolve:completed validation:completed result:completed';
@@ -272,7 +286,7 @@ async function main() {
       'Variables|2|2|0 / Constraints|3|1|−2 / Nonzeros|4|2|−2', `infeasible: no reductions: ${page.impactRows}`);
 
     page = await solve('06-unsupported', 'tests/cli/nonconvex_qp.mps');
-    check(page.summary.startsWith('Unsupported') && page.summary.includes('HTTP 422'), `unsupported: ${page.summary}`);
+    check(page.headline === 'No suitable engine' && page.summary.includes('HTTP 422'), `unsupported: ${page.summary}`);
     check(page.executed === 'executed nothing executed', 'unsupported: nothing executed');
     check(page.pipeline.includes('dispatch:unsupported engine:not_run') && page.terminal === 'dispatch',
       `unsupported pipeline: ${page.pipeline}`);
@@ -280,6 +294,7 @@ async function main() {
     page = await solve('07-invalid-model', 'tests/cli/invalid_bounds.mps');
     check(page.summary.startsWith('Invalid model') && page.summary.includes('HTTP 422'), `invalid: ${page.summary}`);
     check(page.selected === null && page.notRun >= 4, 'invalid: solver sections not run');
+    check(page.invoked === 'Not reached' && page.executionEngine === 'nothing executed', 'invalid: dispatcher not reached');
     check(page.pipeline === 'model:failed classification:not_run presolve:not_run dispatch:not_run ' +
       'engine:not_run postsolve:not_run validation:not_run result:failed', `invalid pipeline: ${page.pipeline}`);
     check(page.terminal === 'model', 'invalid ends at model');
@@ -297,19 +312,42 @@ async function main() {
     check(page.pipeline.startsWith('model:failed') && page.impactState.startsWith('Not run'), 'unreadable: nothing ran');
 
     page = await solve('08-forced-pdlp-cpu', 'tests/cli/simple_lp.mps', { engine: 'pdlp', backend: 'cpu' });
-    check(page.selected === 'selected by dispatcher pdlp' && page.executed === 'executed pdlp', 'forced pdlp');
+    check(page.selected === 'selected engine pdlp' && page.executed === 'executed pdlp', 'forced pdlp');
     check(page.pipeline === ALL_DONE, `forced pipeline: ${page.pipeline}`);
+    check(page.requestMode === 'Forced by caller: pdlp' && page.reason === 'engine forced by the caller', 'forced request');
+
+    // Forcing barrier from the menu (the alias "ipm" is covered by the real
+    // forced_alias fixture; the menu only offers canonical names).
+    page = await solve('08b-forced-barrier', 'tests/cli/simple_lp.mps', { engine: 'barrier' });
+    check(page.selected === 'selected engine barrier' && page.executed === 'executed barrier', 'forced barrier');
+
+    // A valid MILP forced onto PDLP: the engine refuses; the model is not invalid.
+    page = await solve('08c-forced-incompatible', 'tests/cli/knapsack_milp.mps', { engine: 'pdlp' });
+    check(page.headline === 'Requested engine cannot solve this model', `forced incompatible headline: ${page.headline}`);
+    check(page.summary.includes('invalid_model · HTTP 422'), 'KAIRO status still shown');
+    check(page.selected === 'selected engine pdlp' && page.executed === 'executed nothing executed', 'incompatible engines');
+    check(page.refusal.startsWith('Engine rejected the model') && page.refusalMessage.includes('integer variables'),
+      `incompatible refusal: ${page.refusal}`);
+    check(page.engineStageLabel === 'Engine path (no engine executed)', `engine path label: ${page.engineStageLabel}`);
+    check(page.pipeline.startsWith('model:completed classification:completed'), 'model was accepted');
 
     // Selected but not executed: this build has no CUDA backend, so an explicit
     // CUDA request is refused after dispatch chose PDLP.
     page = await solve('10-cuda-refused', 'tests/cli/simple_lp.mps', { engine: 'pdlp', backend: 'cuda' });
-    if (page.summary.startsWith('Unsupported')) {
+    // Decided on the structured outcome, never on headline wording: on a build
+    // without CUDA nothing executes; on a CUDA build PDLP must run on the GPU.
+    if (page.executed === 'executed nothing executed') {
       check(page.pipeline === 'model:completed classification:completed presolve:completed dispatch:completed ' +
         'engine:refused postsolve:not_run validation:not_run result:unsupported', `cuda pipeline: ${page.pipeline}`);
       check(page.terminal === 'engine' && page.pipelineSummary === 'Ended at Engine: not executed.',
         `cuda termination: ${page.pipelineSummary}`);
-      check(page.selected === 'selected by dispatcher pdlp' && page.executed === 'executed nothing executed',
-        'cuda: selected pdlp, nothing executed');
+      check(page.headline === 'Requested backend unavailable' && page.refusal.startsWith('Backend refusal') &&
+        page.reason === 'engine forced by the caller' && page.executionBackend === 'requested cuda (device 0) → executed none' &&
+        page.engineStageLabel === 'Engine path (no engine executed)', `cuda refusal: ${page.headline} / ${page.refusal}`);
+      check(page.selected === 'selected engine pdlp', 'cuda: selected pdlp, nothing executed');
+    } else {
+      check(page.executed === 'executed pdlp' && page.executionBackend.includes('executed cuda'),
+        `cuda build: pdlp must run on the GPU (${page.executionBackend})`);
     }
 
     page = await solve('11-engine-infeasible', 'tests/cli/engine_infeasible_lp.mps');
@@ -318,6 +356,8 @@ async function main() {
     check(page.terminal === 'engine', 'engine-infeasible ends at engine');
 
     page = await solve('13-structured-milp', 'tests/cli/structured_milp.mps');
+    check(page.selected === 'dispatch outcome trivial path the solution is read from variable bounds; no iterative engine runs.' &&
+      page.executed === 'executed trivial path', `trivial: ${page.selected} / ${page.executed}`);
     check(page.objective === '12' && /Big-M rows Detected · max 1000/.test(page.structure) &&
       /Set partitioning Detected/.test(page.structure) && /Symmetric column groups Detected · 1/.test(page.structure),
       `structure flags: ${page.structure}`);

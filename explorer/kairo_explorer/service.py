@@ -60,6 +60,27 @@ STATUS_OUTCOMES = {
     "numerical_failure": ("solver_failure", 500),
 }
 
+# solver::Engine values that are dispatch outcomes rather than solver engines.
+PSEUDO_ENGINES = {"infeasible", "trivial", "unsupported"}
+
+
+def engine_rejected_model(record: dict) -> bool:
+    """The model was accepted, but the engine the dispatcher selected refused it.
+
+    KAIRO reports invalid_model when an engine cannot represent the model it
+    was given (e.g. a valid MILP forced onto PDLP). That is a property of the
+    engine/request, not of the model, so it must not reach the user as
+    "invalid model". Decided from structure alone: the model was classified,
+    the dispatcher ran and selected a real engine, and nothing executed. The
+    record itself -- status included -- is returned unchanged.
+    """
+    dispatch = record.get("dispatch") or {}
+    return (record.get("classification") is not None
+            and dispatch.get("invoked") is True
+            and dispatch.get("engine") not in PSEUDO_ENGINES
+            and dispatch.get("engine") is not None
+            and dispatch.get("executed_engine") is None)
+
 # The model is always written under this fixed name inside a private temporary
 # directory, and KAIRO runs with that directory as its working directory. The
 # client never supplies a path or filename, and the record's instance.path is
@@ -215,4 +236,6 @@ def solve(body: bytes, binary: str, *,
         return _response("unexpected_record", 502, record=record, process=info,
                          message=f"unknown termination status {status!r}")
     outcome, http_status = STATUS_OUTCOMES[status]
+    if status == "invalid_model" and engine_rejected_model(record):
+        outcome = "engine_rejected"  # the request is unprocessable; the model is not invalid
     return _response(outcome, http_status, record=record, process=info)

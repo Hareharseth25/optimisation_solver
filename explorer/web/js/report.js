@@ -7,6 +7,7 @@
 import { h } from './vdom.js';
 import * as f from './format.js';
 import { buildPipeline, renderPipeline } from './pipeline.js';
+import { readDispatch, PSEUDO_ENGINES } from './dispatch.js';
 import { buildModelAnalysis, buildPresolveImpact, renderModelAnalysis, renderPresolveImpact } from './analysis.js';
 
 // ---------------------------------------------------------------------------
@@ -40,7 +41,6 @@ function section(name, title, ...content) {
     content);
 }
 
-const engineName = (value) => (f.isAbsent(value) ? null : f.words(value));
 
 // ---------------------------------------------------------------------------
 // Headline: what happened, in the record's own terms
@@ -78,11 +78,32 @@ export function summarize(body, httpStatus) {
   }
   const status = record.termination.status;
   const message = record.termination.message;
-  const executed = engineName(record.termination.executed_engine);
+  const dx = readDispatch(record);
+  const executed = engineLabel(dx.executed);
+  const selected = engineLabel(dx.selected);
+  // The KAIRO status stays in `code`; the title says what it means here.
   const code = `${status} · HTTP ${httpStatus ?? '?'}`;
+  if (dx.engineRejectedModel) {
+    return { tone: 'error',
+             title: dx.mode === 'forced' ? 'Requested engine cannot solve this model' : 'Selected engine rejected the model',
+             detail: `${selected} refused the model; the model itself was accepted and classified.${message ? ` KAIRO: ${message}` : ''}`,
+             code };
+  }
+  if (dx.backendRefusal) {
+    return { tone: 'error', title: 'Requested backend unavailable',
+             detail: `The dispatcher selected ${selected}, but the requested CUDA backend could not be used, so nothing executed.${message ? ` KAIRO: ${message}` : ''}`,
+             code };
+  }
+  if (dx.selectedNotExecuted) {
+    return { tone: 'error', title: 'Selected engine did not run',
+             detail: `The dispatcher selected ${selected}, but it did not execute.${message ? ` KAIRO: ${message}` : ''}`, code };
+  }
   switch (status) {
     case 'optimal':
-      return { tone: 'ok', title: 'Optimal', detail: `Solved by ${executed ?? 'KAIRO'}; the point passed validation.`, code };
+      return { tone: 'ok', title: 'Optimal',
+               detail: dx.executed === 'trivial'
+                 ? 'Solved on the trivial path (solution read from variable bounds); the point passed validation.'
+                 : `Solved by ${executed ?? 'KAIRO'}; the point passed validation.`, code };
     case 'limit_reached':
       return { tone: 'warn', title: 'Limit reached',
                detail: (record.primal ? 'Stopped at a limit; the best validated point found is shown.'
@@ -96,7 +117,8 @@ export function summarize(body, httpStatus) {
     case 'unbounded':
       return { tone: 'warn', title: 'Unbounded', detail: message || `Proved unbounded by ${executed ?? 'KAIRO'}.`, code };
     case 'unsupported':
-      return { tone: 'error', title: 'Unsupported', detail: message || 'No engine in KAIRO can solve this model as posed.', code };
+      return { tone: 'error', title: dx.pseudo === 'unsupported' ? 'No suitable engine' : 'Unsupported',
+               detail: message || 'No engine in KAIRO can solve this model as posed.', code };
     case 'invalid_model':
       return { tone: 'error', title: 'Invalid model', detail: message || 'KAIRO did not accept the model.', code };
     case 'numerical_failure':
@@ -111,7 +133,7 @@ export function summarize(body, httpStatus) {
 // ---------------------------------------------------------------------------
 
 function runSection(record, context) {
-  const work = record.work ?? {};
+  const executed = readDispatch(record).executed;
   const backend = record.compute_backend?.executed;
   return section('run', 'Run',
     h('div', { class: 'run-figures' },
@@ -121,8 +143,7 @@ function runSection(record, context) {
         h('div', { class: 'figure-value mono', 'data-field': 'objective' },
           f.isAbsent(record.objective) ? 'None' : f.real(record.objective))),
       h('div', { class: 'figure' }, h('div', { class: 'figure-label' }, 'Engine executed'),
-        h('div', { class: 'figure-value', 'data-field': 'engine' },
-          engineName(record.termination.executed_engine) ?? 'None')),
+        h('div', { class: 'figure-value', 'data-field': 'engine' }, engineLabel(executed) ?? 'None')),
       h('div', { class: 'figure' }, h('div', { class: 'figure-label' }, 'Backend'),
         h('div', { class: 'figure-value', 'data-field': 'backend' }, f.isAbsent(backend) ? 'None' : backend.toUpperCase())),
       h('div', { class: 'figure' }, h('div', { class: 'figure-label' }, 'Total solve time'),
@@ -131,8 +152,6 @@ function runSection(record, context) {
     list(
       row('Model file', context.fileName ? `${context.fileName}${context.fileSize !== undefined ? ` (${f.bytes(context.fileSize)})` : ''}` : f.UNKNOWN),
       row('Input SHA-256', mono(f.shortHash(record.instance?.sha256, 16))),
-      f.isAbsent(work.iterations) ? null : row('Iterations', mono(f.count(work.iterations))),
-      f.isAbsent(work.nodes) ? null : row('Nodes', mono(f.count(work.nodes))),
       row('KAIRO build', mono(`${f.shortHash(record.solver?.commit, 10)}${record.solver?.build_type ? ` · ${record.solver.build_type}` : ''}`)),
     ));
 }
@@ -223,34 +242,80 @@ function presolveSection(record) {
     ));
 }
 
+// What an executed / selected value is called on screen: pseudo-engines are
+// outcomes and keep their own wording; real engines keep KAIRO's name.
+function engineLabel(engine) {
+  if (f.isAbsent(engine)) return null;
+  return PSEUDO_ENGINES[engine]?.label ?? f.words(engine);
+}
+
+function step(name, label, ...body) {
+  return h('div', { class: 'decision-step', 'data-step': name },
+    h('div', { class: 'step-label' }, label),
+    h('div', { class: 'step-body' }, body));
+}
+
 function dispatchSection(record) {
-  const d = record.dispatch;
-  if (!d) return section('dispatch', 'Dispatch', notRun('the solver was not called'));
-  const selected = engineName(d.engine);
-  const executed = engineName(d.executed_engine);
-  const requested = record.settings?.requested_engine;
-  // The dispatcher can decide that NO engine applies; that is a decision, not a selection.
-  const refused = d.invoked && d.engine === 'unsupported';
-  const selectedLabel = !d.invoked ? 'Settled before dispatch' : refused ? 'Dispatcher decision' : 'Selected by dispatcher';
-  return section('dispatch', 'Dispatch',
-    h('div', { class: 'dispatch-state' },
-      d.invoked ? badge('ok', 'Dispatcher invoked', { 'data-field': 'invoked' })
-                : badge('neutral', 'Dispatcher not invoked', { 'data-field': 'invoked' }),
-      h('span', { class: 'muted' }, requested ? ` Engine requested: ${f.words(requested)}` : ' Engine requested: automatic')),
-    h('div', { class: 'engine-flow' },
-      h('div', { class: 'engine-box engine-selected', 'data-role': 'selected-engine' },
-        h('div', { class: 'engine-label' }, selectedLabel),
-        h('div', { class: 'engine-name' }, selected ?? f.UNKNOWN)),
-      h('div', { class: 'engine-arrow', 'aria-hidden': 'true' }, '→'),
-      h('div', { class: `engine-box engine-executed${executed ? '' : ' engine-none'}`, 'data-role': 'executed-engine' },
-        h('div', { class: 'engine-label' }, 'Executed'),
-        h('div', { class: 'engine-name' }, executed ?? 'Nothing executed'))),
-    d.reason ? h('blockquote', { class: 'reason', 'data-field': 'reason' }, d.reason) : null,
-    refused ? h('p', { class: 'note' }, 'No KAIRO engine can solve this model as posed, so none ran.') : null,
-    d.invoked && !refused && !executed
-      ? h('p', { class: 'note' }, `The dispatcher chose ${selected}, but it did not run.`) : null,
-    d.invoked && executed && executed !== selected
-      ? h('p', { class: 'note' }, 'The executed engine differs from the selection.') : null);
+  const dx = readDispatch(record);
+  const request = step('request', 'Request',
+    h('span', { 'data-field': 'request-mode' },
+      dx.mode === 'forced'
+        ? ['Forced by caller: ', h('code', { class: 'requested-engine' }, dx.requested)]
+        : 'Automatic — the dispatcher chooses'),
+    dx.mode === 'forced' && dx.state !== 'invoked'
+      ? h('span', { class: 'muted' }, ' · not applied, the dispatcher was not invoked') : null);
+
+  if (dx.state === 'not_called') {
+    return section('dispatch', 'Dispatch decision',
+      h('p', { class: 'panel-question' }, 'What did KAIRO decide, and why?'),
+      request,
+      step('decision', 'Dispatcher', badge('neutral', 'Not reached', { 'data-field': 'invoked' }),
+        h('span', { class: 'muted' }, ' KAIRO rejected the model before dispatch.')));
+  }
+
+  const selectedBox = dx.pseudo
+    ? h('div', { class: 'engine-box engine-selected engine-outcome', 'data-role': 'selected-engine', 'data-pseudo': dx.pseudo },
+      h('div', { class: 'engine-label' }, dx.state === 'invoked' ? 'Dispatch outcome' : 'Outcome before dispatch'),
+      h('div', { class: 'engine-name' }, PSEUDO_ENGINES[dx.pseudo].label),
+      h('div', { class: 'engine-note' }, PSEUDO_ENGINES[dx.pseudo].note))
+    : h('div', { class: 'engine-box engine-selected', 'data-role': 'selected-engine' },
+      h('div', { class: 'engine-label' }, 'Selected engine'),
+      h('div', { class: 'engine-name' }, engineLabel(dx.selected) ?? f.UNKNOWN));
+  const executedBox = h('div', { class: `engine-box engine-executed${dx.executed ? '' : ' engine-none'}`,
+                                  'data-role': 'executed-engine' },
+    h('div', { class: 'engine-label' }, 'Executed'),
+    h('div', { class: 'engine-name' }, engineLabel(dx.executed) ?? 'Nothing executed'));
+
+  const refusal = dx.refusal
+    ? h('div', { class: 'refusal', 'data-field': 'refusal' },
+      h('div', { class: 'refusal-title' },
+        dx.backendRefusal ? 'Backend refusal' : dx.engineRejectedModel ? 'Engine rejected the model' : 'Execution refusal'),
+      h('p', { class: 'note' }, `Why ${engineLabel(dx.selected)} did not run, as reported by its execution path — not the dispatcher's reason.`),
+      dx.refusal.message ? h('blockquote', { class: 'reason', 'data-field': 'refusal-message' }, dx.refusal.message) : null,
+      dx.refusal.backendReason
+        ? h('p', { class: 'note', 'data-field': 'refusal-backend' }, 'Backend: ', dx.refusal.backendReason) : null,
+      dx.engineRejectedModel
+        ? h('p', { class: 'note' }, 'The model itself was accepted and classified; the selected engine cannot represent it.') : null)
+    : null;
+
+  return section('dispatch', 'Dispatch decision',
+    h('p', { class: 'panel-question' }, 'What did KAIRO decide, and why?'),
+    request,
+    step('decision', 'Dispatcher',
+      dx.state === 'invoked' ? badge('ok', 'Invoked', { 'data-field': 'invoked' })
+                             : badge('neutral', 'Not invoked', { 'data-field': 'invoked' }),
+      dx.dispatchSeconds !== null ? h('span', { class: 'muted mono' }, ` ${f.seconds(dx.dispatchSeconds)}`) : null),
+    dx.reason
+      ? step('why', 'Why — KAIRO dispatcher', h('blockquote', { class: 'reason', 'data-field': 'reason' }, dx.reason))
+      : null,
+    h('div', { class: 'engine-flow' }, selectedBox, h('div', { class: 'engine-arrow', 'aria-hidden': 'true' }, '→'), executedBox),
+    refusal,
+    dx.reducedModel
+      ? h('p', { class: 'note', 'data-field': 'reduced-evidence' },
+        'Observed reduced model given to the dispatcher: ',
+        h('span', { class: 'mono' }, [['variables', 'variable'], ['constraints', 'constraint'], ['nonzeros', 'nonzero']]
+          .map(([key, one]) => `${f.count(dx.reducedModel[key])} ${dx.reducedModel[key] === 1 ? one : key}`).join(' · ')))
+      : null);
 }
 
 const STAGES = [
@@ -260,17 +325,37 @@ const STAGES = [
 ];
 
 function executionSection(record, process) {
-  const backend = record.compute_backend ?? {};
+  const dx = readDispatch(record);
+  const b = dx.backend;
   const stages = record.stage_seconds ?? {};
+  const work = record.work ?? {};
+  const term = record.termination ?? {};
+  // Engine time is execution only when an engine executed.
+  const stageLabel = (key, label) => (key !== 'engine' ? label
+    : dx.engineTimeKind === 'path' ? 'Engine path (no engine executed)' : 'Engine execution');
   const ran = STAGES.filter(([key]) => !f.isAbsent(stages[key]));
   const skipped = STAGES.filter(([key]) => f.isAbsent(stages[key]));
   return section('execution', 'Execution',
+    h('p', { class: 'panel-question' }, 'What actually happened?'),
     list(
-      row('Backend', h('span', {},
-        `requested ${backend.requested ?? f.UNKNOWN} → executed `,
-        f.isAbsent(backend.executed) ? h('strong', {}, 'none') : h('strong', {}, backend.executed),
-        f.isAbsent(backend.executed_device) ? null : ` (device ${backend.executed_device})`)),
-      backend.reason ? row('Backend note', h('span', { class: 'muted' }, backend.reason)) : null,
+      row('Engine', h('span', { 'data-field': 'execution-engine' },
+        dx.executed ? h('strong', {}, engineLabel(dx.executed)) : h('span', { class: 'muted' }, 'nothing executed'))),
+      row('Backend', h('span', { 'data-field': 'execution-backend' },
+        `requested ${b.requested ?? f.UNKNOWN}`,
+        b.requested === 'cuda' && !f.isAbsent(b.requestedDevice) ? ` (device ${b.requestedDevice})` : '',
+        ' → executed ',
+        f.isAbsent(b.executed) ? h('strong', {}, 'none') : h('strong', {}, b.executed),
+        f.isAbsent(b.executedDevice) ? null : ` (device ${b.executedDevice})`)),
+      b.mismatch ? row('', h('span', { class: 'note-inline', 'data-field': 'backend-mismatch' },
+        `The ${b.requested} request was not honoured.`)) : null,
+      // When nothing ran, the writer copies termination.message here; shown once, below.
+      b.reason && b.reason !== term.message
+        ? row('Backend reason', h('span', { class: 'muted', 'data-field': 'backend-reason' }, b.reason)) : null,
+      row('Termination', h('span', { 'data-field': 'termination' },
+        h('code', {}, term.status ?? f.UNKNOWN),
+        term.message ? h('span', { class: 'muted' }, ` — ${term.message}`) : h('span', { class: 'muted' }, ' — no message'))),
+      f.isAbsent(work.iterations) ? null : row('Iterations', mono(f.count(work.iterations))),
+      f.isAbsent(work.nodes) ? null : row('Nodes', mono(f.count(work.nodes))),
     ),
     ran.length === 0
       ? h('p', {}, notRun('no pipeline stage ran'))
@@ -278,7 +363,7 @@ function executionSection(record, process) {
         h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Stage'), h('th', { scope: 'col' }, 'Time'))),
         h('tbody', {},
           ran.map(([key, label]) => h('tr', { 'data-stage': key },
-            h('th', { scope: 'row' }, label), h('td', { class: 'mono' }, f.seconds(stages[key])))),
+            h('th', { scope: 'row' }, stageLabel(key, label)), h('td', { class: 'mono' }, f.seconds(stages[key])))),
           h('tr', { class: 'total', 'data-stage': 'total' }, h('th', { scope: 'row' }, 'Total'),
             h('td', { class: 'mono' }, f.isAbsent(stages.total) ? notRun() : f.seconds(stages.total))))),
     skipped.length && ran.length

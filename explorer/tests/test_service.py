@@ -204,6 +204,33 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual(record["termination"]["status"], "limit_reached")
         self.assertIsNone(record["primal"])
 
+    # A valid model forced onto an engine that cannot represent it: KAIRO's
+    # status (invalid_model) is preserved in the record, but the application
+    # outcome must not call the model invalid.
+    def test_forced_engine_rejecting_a_valid_model_is_not_invalid_model(self):
+        record = self.solve(fixture("knapsack_milp.mps"), 422, "engine_rejected", engine="pdlp")
+        self.assertEqual(record["termination"]["status"], "invalid_model", "KAIRO status untouched")
+        self.assertEqual(record["classification"]["problem_class"], "MILP")
+        self.assertTrue(record["dispatch"]["invoked"])
+        self.assertEqual(record["dispatch"]["engine"], "pdlp")
+        self.assertIsNone(record["dispatch"]["executed_engine"])
+        self.assertIn("integer variables", record["termination"]["message"])
+        self.assertIsNotNone(record["stage_seconds"]["engine"], "engine path was entered")
+
+        record = self.solve(fixture("convex_qp.mps"), 422, "engine_rejected", engine="dual_simplex")
+        self.assertIn("linear objectives only", record["termination"]["message"])
+
+    def test_engine_rejected_needs_the_whole_structure(self):
+        base = {"classification": {"problem_class": "LP"},
+                "dispatch": {"invoked": True, "engine": "pdlp", "executed_engine": None}}
+        self.assertTrue(service.engine_rejected_model(base))
+        for change in ({"classification": None},
+                       {"dispatch": None},
+                       {"dispatch": {"invoked": False, "engine": "pdlp", "executed_engine": None}},
+                       {"dispatch": {"invoked": True, "engine": "unsupported", "executed_engine": None}},
+                       {"dispatch": {"invoked": True, "engine": "pdlp", "executed_engine": "pdlp"}}):
+            self.assertFalse(service.engine_rejected_model({**base, **change}), change)
+
     def test_outcome_table_covers_every_solver_status(self):
         statuses = {"optimal", "infeasible", "unbounded", "limit_reached",
                     "numerical_failure", "invalid_model", "unsupported"}
