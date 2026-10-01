@@ -119,21 +119,21 @@
     "integrality_respected": true
    },
    "stage_seconds": {
-    "parse": 7.0375e-05,
-    "presolve": 3.625e-06,
-    "solve": 0.000130208,
-    "postsolve": 1e-06,
-    "validation": 9.170000000000001e-07,
-    "classification": 5.583e-06,
-    "dispatch": 4.16e-07,
-    "engine": 0.000114666,
-    "reduced_validation": 1e-06,
-    "total": 0.000127958
+    "parse": 4.5042e-05,
+    "presolve": 3.75e-06,
+    "solve": 0.000119708,
+    "postsolve": 1.292e-06,
+    "validation": 8.75e-07,
+    "classification": 4.917e-06,
+    "dispatch": 2.92e-07,
+    "engine": 0.00010475,
+    "reduced_validation": 8.75e-07,
+    "total": 0.000117375
    },
    "work": {
     "iterations": null,
     "nodes": 1,
-    "solve_seconds": 0.000127958
+    "solve_seconds": 0.000117375
    },
    "variable_names": [
     "A",
@@ -147,7 +147,7 @@
   "error": null,
   "process": {
    "exit_code": 0,
-   "wall_seconds": 0.004060792000000001
+   "wall_seconds": 0.0033768750000000014
   }
  }
 }

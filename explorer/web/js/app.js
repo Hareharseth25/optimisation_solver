@@ -70,6 +70,22 @@ async function onFile(event) {
   sync();
 }
 
+// Pipeline stage -> its detailed section: scroll there, move focus to the
+// section heading, and mark the section briefly.
+function onPipelineClick(event) {
+  const button = event.target.closest('[data-target]');
+  if (!button) return;
+  const target = document.querySelector(`[data-section="${button.dataset.target}"]`);
+  if (!target) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  target.querySelector('.panel-title')?.focus({ preventScroll: true });
+  for (const marked of document.querySelectorAll('.is-highlighted')) marked.classList.remove('is-highlighted');
+  for (const active of document.querySelectorAll('.stage-active')) active.classList.remove('stage-active');
+  target.classList.add('is-highlighted');
+  button.closest('.stage')?.classList.add('stage-active');
+}
+
 function showErrors(errors) {
   for (const id of Object.values(FIELDS)) $(id).removeAttribute('aria-invalid');
   for (const error of errors) if (FIELDS[error.field]) $(FIELDS[error.field]).setAttribute('aria-invalid', 'true');
@@ -106,6 +122,7 @@ function init() {
   $('model-file').addEventListener('change', onFile);
   for (const id of Object.values(FIELDS)) $(id).addEventListener('input', sync);
   $('run-form').addEventListener('submit', onSubmit);
+  $('results').addEventListener('click', onPipelineClick);
   mount($('results'), renderIdle());
   sync();
   showHealth();

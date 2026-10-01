@@ -316,3 +316,92 @@ tbody th { font-weight: 500; }
 .check { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
 .failure { margin: 0 0 8px; color: var(--error); font-size: 13px; }
 .objective-compare { margin-bottom: 12px; }
+
+/* ---------------------------------------------------------------- pipeline
+   One segmented rail: each stage is a cell whose top bar carries its state.
+   Not-run stages are dashed and dimmed; the stage where the solve ended is
+   outlined. Colour is reserved for state. */
+
+.pipeline {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px 18px;
+}
+.pipeline-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.pipeline-head .panel-title { margin: 0; }
+.pipeline-summary { margin: 0; font-size: 13px; font-weight: 600; }
+
+.pipeline-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+@media (max-width: 1380px) { .pipeline-rail { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.stage { min-width: 0; display: flex; }
+.stage-button {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 10px 10px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--stage-colour, var(--border-strong));
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.stage-button:hover { border-color: var(--border-strong); border-top-color: var(--stage-colour, var(--border-strong)); }
+.stage-ok    { --stage-colour: var(--ok); }
+.stage-warn  { --stage-colour: var(--warn); }
+.stage-error { --stage-colour: var(--error); }
+.stage-muted .stage-button {
+  border-style: dashed;
+  border-top-style: solid;
+  background: transparent;
+  color: var(--muted);
+}
+.stage-terminal .stage-button { box-shadow: 0 0 0 2px var(--stage-colour, var(--accent)); }
+.stage-active .stage-button { background: var(--accent-soft); }
+
+.stage-name { font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.stage-state { font-size: 14px; font-weight: 700; margin-bottom: 2px; overflow-wrap: anywhere; }
+.stage-ok .stage-state { color: var(--ok); }
+.stage-warn .stage-state { color: var(--warn); }
+.stage-error .stage-state { color: var(--error); }
+.stage-muted .stage-state { color: var(--muted); font-weight: 500; font-style: italic; }
+.stage-line {
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.stage-time { margin-top: auto; padding-top: 6px; font-size: 11.5px; color: var(--muted); }
+.stage-time-label { font-family: var(--sans); }
+.stage-end {
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stage-colour, var(--accent));
+}
+
+/* The detailed section a stage points to. */
+.panel { transition: box-shadow 0.2s ease; scroll-margin-top: 16px; }
+.panel.is-highlighted { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent); }
+.panel-title:focus { outline: none; }
+.panel-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .panel { transition: none; } }

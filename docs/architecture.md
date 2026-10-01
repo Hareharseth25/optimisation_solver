@@ -152,7 +152,8 @@ Explorer service   explorer/kairo_explorer (Python stdlib)
   │                POST /api/solve → optimsolver.solve.v1 record; serves the UI
   ▼
 Explorer UI        explorer/web (HTML/CSS/ES modules, no build, no dependencies)
-                   renders the record: Run, Model, Presolve, Dispatch, Execution, Validation
+                   renders the record: solver pipeline, then Run, Model, Presolve,
+                   Dispatch, Execution, Validation
 ```
 
 | layer | owns | never does |
@@ -164,6 +165,7 @@ Explorer UI        explorer/web (HTML/CSS/ES modules, no build, no dependencies)
 - **Core owns solver truth.** Every solver fact comes from one `solver::solve()` call.
 - **The application owns interaction and orchestration.** It validates the request's shape, writes the MPS text to a private temporary directory, and runs `optimsolver` as an argument list (no shell) with `--json`. It returns the record unchanged and maps `termination.status` to an HTTP outcome. Option values are passed to KAIRO, which stays authoritative.
 - **The UI owns presentation.** It renders the record's fields directly, with `null` shown as "Not run" or "Unknown", never 0. The selected engine (`dispatch.engine`) and the executed engine (`dispatch.executed_engine`) are shown separately.
+- **The solver pipeline view** is `buildPipeline(record)`: a pure mapping from the record to a state for each stage (Model → Classification → Presolve → Dispatch → Engine → Postsolve → Validation → Result). Each state is read from the field that records whether that stage ran, not inferred from the final status. It marks where the run ended. The mapping table is in `explorer/README.md`.
 - **The CLI is another consumer** of the same core and record.
 - The service serves the UI from the same origin as the API, so no CORS is needed and no other site can call the unauthenticated API from a browser. Static files come from an allowlist built at startup.
 - **Explorer contains no optimization algorithms** and never parses terminal output.

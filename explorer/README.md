@@ -34,7 +34,30 @@ Then open **http://127.0.0.1:8765/**. The same process serves the UI and the API
 1. **Model:** choose an MPS file (`.mps`, or `.qps` with QUADOBJ/QMATRIX). The sidebar shows the file name, its size, and whether it is ready. The file's text is sent in the request body; no path ever leaves the browser.
 2. **Solver:** pick the options below. Fields that do not apply are disabled. For example, the backend is disabled when the chosen engine has no CUDA backend, and the CUDA device is disabled when the backend is CPU.
 3. **Run:** the button disables itself and the page says *Running KAIRO…*. There is no progress bar, because KAIRO reports nothing until it finishes.
-4. **Report:** the result headline, then Run, Model, Presolve, Dispatch, Execution and Validation, all read from the returned record.
+4. **Report:** the result headline, then the **solver pipeline**, then the detailed Run, Model, Presolve, Dispatch, Execution and Validation sections, all read from the returned record.
+
+### Solver pipeline
+
+The pipeline answers "what happened?" at a glance. The detailed sections below it are the evidence; click a stage to jump to its section.
+
+```text
+Model → Classification → Presolve → Dispatch → Engine → Postsolve → Validation → Result
+```
+
+Each stage's state is read from the record field that says whether it ran (`js/pipeline.js`, `buildPipeline(record)`):
+
+| stage | state from |
+|---|---|
+| Model | `termination.status = invalid_model` with no `classification` → rejected (`instance.variables = null` → could not be read) |
+| Classification | `classification` present → completed, else not run |
+| Presolve | `presolve` present → completed / `presolve.infeasible` → infeasible; else not run |
+| Dispatch | `dispatch.invoked`; `dispatch.engine = unsupported` → no suitable engine |
+| Engine | `dispatch.executed_engine` present → executed, with `termination.status` deciding executed / infeasible / unbounded / limit / failed. If an engine was selected but `executed_engine` is null → **not executed** (selected but refused, e.g. CUDA unavailable) |
+| Postsolve | `validation.original_space` present; `invalid_mapping` / `internal_error` → reconstruction failed |
+| Validation | `validation.reduced_space` and `validation.original_space`, each passed / failed |
+| Result | `termination.status`, `objective` |
+
+States are completed, not run, infeasible, unbounded, limit, unsupported, not executed and failed. The stage where the run ended (the last one that ran) is outlined and marked *ended here*. Times next to stages are the record's `stage_seconds`; a stage that did not run shows no time. KAIRO checks the engine's point in reduced space before postsolve and checks the reconstructed point as part of postsolve, so the Validation stage reports both checks by space.
 
 Supported input: MPS / free MPS text, as the `optimsolver` CLI reads it. Supported options: engine (automatic, dual simplex, PDLP, barrier, branch and cut, QP, MIQP), backend (auto, CPU, CUDA), time limit, threads, CUDA device.
 
@@ -138,6 +161,7 @@ A solve is request → response. See `docs/architecture.md` ("Explorer Applicati
 | `js/options.js` | the five service options, which fields apply, basic number checks, request `options` object |
 | `js/api.js` | `POST /api/solve` and `GET /api/health`; refuses a second submission while one runs |
 | `js/report.js` | pure render functions over the `optimsolver.solve.v1` record |
+| `js/pipeline.js` | `buildPipeline(record)` (record → stage states, pure) and its rendering |
 | `js/format.js` | number, time and residual formatting; `null` → "Not run" / "Unknown", never 0 |
 | `js/vdom.js` | tiny `h()` tree, mounted with `textContent` only (no `innerHTML`) |
 
@@ -146,5 +170,5 @@ The engine menu lists the names `solver::parseEngine` accepts for MPS models. `e
 ## Tests
 
 - `explorer/tests/test_service.py` (CTest `explorer_service`): runs every case through the service and directly through the binary, and requires identical records apart from wall-clock values. Also covers static file serving, path traversal and the UI's engine names.
-- `explorer/web/tests/*.test.js` (CTest `explorer_ui`, or `npm test` in `explorer/web`): Node's built-in runner. Covers upload state, the options form, request format, duplicate-submit refusal, and rendering of real service responses. These fixtures come from `tests/fixtures/make_fixtures.py`: LP, MILP, QP, presolve-infeasible, unsupported, invalid, unreadable, limit, forced engine and rejected option.
+- `explorer/web/tests/*.test.js` (CTest `explorer_ui`, or `npm test` in `explorer/web`): Node's built-in runner. Covers upload state, the options form, request format, duplicate-submit refusal, and rendering of real service responses, and the exact pipeline state for every case. These fixtures come from `tests/fixtures/make_fixtures.py`: LP, MILP, QP, presolve-infeasible, engine-infeasible, unbounded, unsupported, CUDA refused, invalid, unreadable, limit, forced engine and rejected option.
 - `explorer/web/tests/e2e/browser.e2e.js` (CTest `explorer_ui_browser`, enabled with `-DEXPLORER_BROWSER_TESTS=ON`): starts the service and drives headless Chrome through the DevTools Protocol. It uploads real MPS files through the file input, presses Run, checks the page, and fails on any page error or CSP violation. Add `--screenshots <dir>` and `--color-scheme light|dark` to capture the UI.

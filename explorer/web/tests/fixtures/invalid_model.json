@@ -55,7 +55,7 @@
     "integrality_respected": null
    },
    "stage_seconds": {
-    "parse": 4.1541e-05,
+    "parse": 3.4208e-05,
     "presolve": null,
     "solve": null,
     "postsolve": null,
@@ -81,7 +81,7 @@
   "error": null,
   "process": {
    "exit_code": 1,
-   "wall_seconds": 0.003010416000000002
+   "wall_seconds": 0.002704999999999999
   }
  }
 }

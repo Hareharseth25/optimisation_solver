@@ -6,6 +6,7 @@
 
 import { h } from './vdom.js';
 import * as f from './format.js';
+import { buildPipeline, renderPipeline } from './pipeline.js';
 
 // ---------------------------------------------------------------------------
 // Small building blocks
@@ -34,7 +35,7 @@ function mono(text) {
 
 function section(name, title, ...content) {
   return h('section', { class: `panel panel-${name}`, 'data-section': name, 'aria-labelledby': `h-${name}` },
-    h('h2', { id: `h-${name}`, class: 'panel-title' }, title),
+    h('h2', { id: `h-${name}`, class: 'panel-title', tabindex: '-1' }, title),
     content);
 }
 
@@ -381,6 +382,8 @@ export function renderResult(result, context = {}) {
   if (!record) return h('div', { class: 'result', 'data-view': 'result' }, banner);
   return h('div', { class: 'result', 'data-view': 'result' },
     banner,
+    // "What happened?" first; the sections below are the evidence.
+    renderPipeline(buildPipeline(record)),
     runSection(record, context),
     h('div', { class: 'grid' },
       modelSection(record),

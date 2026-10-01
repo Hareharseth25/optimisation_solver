@@ -125,21 +125,21 @@
     "integrality_respected": true
    },
    "stage_seconds": {
-    "parse": 0.000232709,
-    "presolve": 5.95e-05,
-    "solve": 0.000317459,
-    "postsolve": 1.917e-06,
-    "validation": 1.042e-06,
-    "classification": 3.5334e-05,
-    "dispatch": 7.5e-07,
-    "engine": 0.000126209,
-    "reduced_validation": 3.325e-05,
-    "total": 0.000258917
+    "parse": 0.000276917,
+    "presolve": 7.4334e-05,
+    "solve": 0.0004085,
+    "postsolve": 2.542e-06,
+    "validation": 1.167e-06,
+    "classification": 4.0166e-05,
+    "dispatch": 1e-06,
+    "engine": 0.000173875,
+    "reduced_validation": 3.4292e-05,
+    "total": 0.000328292
    },
    "work": {
     "iterations": 1,
     "nodes": null,
-    "solve_seconds": 0.000258917
+    "solve_seconds": 0.000328292
    },
    "variable_names": [
     "X1",
@@ -153,7 +153,7 @@
   "error": null,
   "process": {
    "exit_code": 0,
-   "wall_seconds": 0.016105916999999997
+   "wall_seconds": 0.0063835
   }
  }
 }

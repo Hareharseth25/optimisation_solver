@@ -123,21 +123,21 @@
     "integrality_respected": true
    },
    "stage_seconds": {
-    "parse": 5.8666e-05,
-    "presolve": 4e-06,
-    "solve": 0.000175125,
-    "postsolve": 3.583e-06,
-    "validation": 6.26e-07,
-    "classification": 4.375e-06,
-    "dispatch": 4.5375e-05,
-    "engine": 0.000111917,
-    "reduced_validation": 2.208e-06,
-    "total": 0.000172917
+    "parse": 4.1416e-05,
+    "presolve": 3.792e-06,
+    "solve": 0.000140917,
+    "postsolve": 3.667e-06,
+    "validation": 8.34e-07,
+    "classification": 4.042e-06,
+    "dispatch": 4.075e-05,
+    "engine": 8.2292e-05,
+    "reduced_validation": 2.625e-06,
+    "total": 0.000138834
    },
    "work": {
     "iterations": 50,
     "nodes": null,
-    "solve_seconds": 0.000172917
+    "solve_seconds": 0.000138834
    },
    "variable_names": [
     "X",
@@ -150,7 +150,7 @@
   "error": null,
   "process": {
    "exit_code": 0,
-   "wall_seconds": 0.0037844159999999988
+   "wall_seconds": 0.003138624999999999
   }
  }
 }

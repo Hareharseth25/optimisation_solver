@@ -95,21 +95,21 @@
     "integrality_respected": null
    },
    "stage_seconds": {
-    "parse": 3.7875e-05,
-    "presolve": 3.708e-06,
-    "solve": 1.5e-05,
+    "parse": 3.8458e-05,
+    "presolve": 3.208e-06,
+    "solve": 2.4667e-05,
     "postsolve": null,
-    "validation": 8.76e-07,
-    "classification": 3.792e-06,
+    "validation": 5.420000000000001e-07,
+    "classification": 1.4417e-05,
     "dispatch": 3.125e-06,
     "engine": null,
     "reduced_validation": null,
-    "total": 1.2917e-05
+    "total": 2.2666e-05
    },
    "work": {
     "iterations": null,
     "nodes": null,
-    "solve_seconds": 1.2917e-05
+    "solve_seconds": 2.2666e-05
    },
    "variable_names": [
     "X",
@@ -122,7 +122,7 @@
   "error": null,
   "process": {
    "exit_code": 1,
-   "wall_seconds": 0.0028787499999999994
+   "wall_seconds": 0.0029036669999999917
   }
  }
 }

@@ -6,9 +6,9 @@
    "schema": "optimsolver.solve.v1",
    "instance": {
     "path": "model.mps",
-    "sha256": "a55ff2053e98a6dff10181b5b6205c02be7be103597cc1edb86fac000a69b0b6",
+    "sha256": "18f9286553f8fd7d9b9a30dc65b9277026abb92be63124d34b8b1aae7de80625",
     "variables": 2,
-    "constraints": 3,
+    "constraints": 1,
     "objective_sense": "min"
    },
    "solver": {
@@ -18,10 +18,10 @@
    },
    "compute_backend": {
     "requested": "auto",
-    "executed": null,
+    "executed": "cpu",
     "requested_device": 0,
     "executed_device": null,
-    "reason": "presolve proved the model infeasible"
+    "reason": "engine executed on cpu"
    },
    "settings": {
     "requested_engine": null,
@@ -34,51 +34,51 @@
     "num_binary": 0,
     "num_integer": 0,
     "num_continuous": 2,
-    "nonzeros": 4,
-    "coef_range_ratio": 2,
-    "num_rows": 3,
+    "nonzeros": 2,
+    "coef_range_ratio": 1,
+    "num_rows": 1,
     "num_columns": 2,
     "has_network_structure": false,
     "has_big_m": false,
     "max_big_m": 0,
     "has_set_partitioning": false,
-    "symmetric_groups": 0
+    "symmetric_groups": 1
    },
    "presolve": {
-    "infeasible": true,
+    "infeasible": false,
     "converged": true,
     "reduced_variables": 2,
     "reduced_constraints": 1,
-    "transformations": 5,
+    "transformations": 0,
     "original_variables": 2,
-    "original_constraints": 3,
-    "original_nonzeros": 4,
+    "original_constraints": 1,
+    "original_nonzeros": 2,
     "reduced_nonzeros": 2,
     "transformations_by_type": {
      "remove_variable": 0,
-     "remove_constraint": 2,
+     "remove_constraint": 0,
      "fix_variable": 0,
      "substitute_variable": 0,
-     "tighten_lower_bound": 2,
-     "tighten_upper_bound": 1
+     "tighten_lower_bound": 0,
+     "tighten_upper_bound": 0
     }
    },
    "dispatch": {
-    "invoked": false,
-    "engine": "infeasible",
-    "reason": "presolve proved the model infeasible",
-    "executed_engine": null
+    "invoked": true,
+    "engine": "dual_simplex",
+    "reason": "small enough for the dual simplex (1 rows, 2 nonzeros); it terminates at an exact vertex",
+    "executed_engine": "dual_simplex"
    },
    "validation": {
     "reduced_space": null,
     "original_space": null
    },
    "termination": {
-    "status": "infeasible",
-    "message": "presolve proved the model infeasible",
-    "dispatched_engine": "infeasible",
-    "executed_engine": null,
-    "engine_reason": "presolve proved the model infeasible"
+    "status": "unbounded",
+    "message": "dual simplex",
+    "dispatched_engine": "dual_simplex",
+    "executed_engine": "dual_simplex",
+    "engine_reason": "small enough for the dual simplex (1 rows, 2 nonzeros); it terminates at an exact vertex"
    },
    "objective": null,
    "dual_bound": null,
@@ -86,7 +86,7 @@
    "primal": null,
    "duals": null,
    "reduced_costs": null,
-   "duals_unavailable_reason": "No dual solution is available.",
+   "duals_unavailable_reason": "No optimal solution is available.",
    "self_reported": {
     "max_bound_residual": null,
     "max_constraint_residual": null,
@@ -95,36 +95,34 @@
     "integrality_respected": null
    },
    "stage_seconds": {
-    "parse": 4.2792e-05,
-    "presolve": 4.583e-06,
-    "solve": 1.1875e-05,
+    "parse": 3.4833e-05,
+    "presolve": 3e-06,
+    "solve": 1.9916e-05,
     "postsolve": null,
-    "validation": 6.25e-07,
-    "classification": 4.042e-06,
-    "dispatch": null,
-    "engine": null,
+    "validation": 6.67e-07,
+    "classification": 3.833e-06,
+    "dispatch": 7.5e-07,
+    "engine": 8.583e-06,
     "reduced_validation": null,
-    "total": 9.417e-06
+    "total": 1.8125e-05
    },
    "work": {
     "iterations": null,
     "nodes": null,
-    "solve_seconds": 9.417e-06
+    "solve_seconds": 1.8125e-05
    },
    "variable_names": [
-    "X1",
-    "X2"
+    "X",
+    "Y"
    ],
    "constraint_names": [
-    "C_LESS",
-    "C_GREATER",
-    "C_EQUAL"
+    "C1"
    ]
   },
   "error": null,
   "process": {
    "exit_code": 0,
-   "wall_seconds": 0.0028626250000000006
+   "wall_seconds": 0.002911041000000003
   }
  }
 }

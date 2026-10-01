@@ -186,6 +186,10 @@ async function main() {
                  problemClass: t('[data-field=problem-class]'),
                  sections: [...document.querySelectorAll('[data-section]')].map((s) => s.dataset.section),
                  notRun: document.querySelectorAll('[data-state=not-run]').length,
+                 pipeline: [...document.querySelectorAll('[data-stage-id]')]
+                   .map((li) => li.dataset.stageId + ':' + li.dataset.stageState).join(' '),
+                 terminal: document.querySelector('.stage-terminal')?.dataset.stageId ?? null,
+                 pipelineSummary: t('[data-field=pipeline-summary]'),
                  stages: [...document.querySelectorAll('[data-stage]')].map((s) => s.dataset.stage) };
       })()`);
       await screenshot(name);
@@ -196,8 +200,25 @@ async function main() {
     check(page.summary.startsWith('Optimal'), `LP summary: ${page.summary}`);
     check(page.objective === '28' && page.problemClass === 'LP', 'LP objective/class');
     check(page.selected === 'selected by dispatcher dual simplex' && page.executed === 'executed dual simplex', 'LP engines');
-    check(page.sections.join() === 'run,model,presolve,dispatch,execution,validation', `LP sections ${page.sections}`);
     check(page.notRun === 0, 'LP: every stage ran');
+    const ALL_DONE = 'model:completed classification:completed presolve:completed dispatch:completed ' +
+      'engine:completed postsolve:completed validation:completed result:completed';
+    check(page.pipeline === ALL_DONE, `LP pipeline: ${page.pipeline}`);
+    check(page.terminal === 'validation' && page.pipelineSummary === 'Ran end to end: validation passed.',
+      `LP termination: ${page.terminal} / ${page.pipelineSummary}`);
+    check(page.sections.join() === 'pipeline,run,model,presolve,dispatch,execution,validation',
+      `pipeline above the evidence: ${page.sections}`);
+
+    // Clicking a stage moves to its detailed section.
+    for (const [stageId, sectionName] of [['dispatch', 'dispatch'], ['presolve', 'presolve'], ['engine', 'execution']]) {
+      const landed = await evaluate(`(() => {
+        document.querySelector('[data-stage-id=${stageId}] button').click();
+        const section = document.querySelector('[data-section=${sectionName}]');
+        return section.classList.contains('is-highlighted') && section.contains(document.activeElement) &&
+               document.querySelectorAll('.is-highlighted').length === 1; })()`);
+      check(landed, `clicking ${stageId} highlights and focuses ${sectionName}`);
+    }
+    await screenshot('01b-lp-dispatch-highlighted');
 
     page = await solve('02-netlib-afiro', 'benchmarks/instances/netlib/afiro.mps');
     check(page.summary.startsWith('Optimal') && page.objective === '-464.7531429', `afiro: ${page.objective}`);
@@ -214,17 +235,47 @@ async function main() {
     check(page.executed === 'executed nothing executed', `infeasible executed: ${page.executed}`);
     check(page.stages.join() === 'validation,classification,presolve,total', `infeasible stages ${page.stages}`);
     check(page.notRun === 2, 'infeasible: both validations not run');
+    check(page.pipeline === 'model:completed classification:completed presolve:infeasible dispatch:not_run ' +
+      'engine:not_run postsolve:not_run validation:not_run result:infeasible', `infeasible pipeline: ${page.pipeline}`);
+    check(page.terminal === 'presolve', 'infeasible ends at presolve');
 
     page = await solve('06-unsupported', 'tests/cli/nonconvex_qp.mps');
     check(page.summary.startsWith('Unsupported') && page.summary.includes('HTTP 422'), `unsupported: ${page.summary}`);
     check(page.executed === 'executed nothing executed', 'unsupported: nothing executed');
+    check(page.pipeline.includes('dispatch:unsupported engine:not_run') && page.terminal === 'dispatch',
+      `unsupported pipeline: ${page.pipeline}`);
 
     page = await solve('07-invalid-model', 'tests/cli/invalid_bounds.mps');
     check(page.summary.startsWith('Invalid model') && page.summary.includes('HTTP 422'), `invalid: ${page.summary}`);
     check(page.selected === null && page.notRun >= 4, 'invalid: solver sections not run');
+    check(page.pipeline === 'model:failed classification:not_run presolve:not_run dispatch:not_run ' +
+      'engine:not_run postsolve:not_run validation:not_run result:failed', `invalid pipeline: ${page.pipeline}`);
+    check(page.terminal === 'model', 'invalid ends at model');
 
     page = await solve('08-forced-pdlp-cpu', 'tests/cli/simple_lp.mps', { engine: 'pdlp', backend: 'cpu' });
     check(page.selected === 'selected by dispatcher pdlp' && page.executed === 'executed pdlp', 'forced pdlp');
+    check(page.pipeline === ALL_DONE, `forced pipeline: ${page.pipeline}`);
+
+    // Selected but not executed: this build has no CUDA backend, so an explicit
+    // CUDA request is refused after dispatch chose PDLP.
+    page = await solve('10-cuda-refused', 'tests/cli/simple_lp.mps', { engine: 'pdlp', backend: 'cuda' });
+    if (page.summary.startsWith('Unsupported')) {
+      check(page.pipeline === 'model:completed classification:completed presolve:completed dispatch:completed ' +
+        'engine:refused postsolve:not_run validation:not_run result:unsupported', `cuda pipeline: ${page.pipeline}`);
+      check(page.terminal === 'engine' && page.pipelineSummary === 'Ended at Engine: not executed.',
+        `cuda termination: ${page.pipelineSummary}`);
+      check(page.selected === 'selected by dispatcher pdlp' && page.executed === 'executed nothing executed',
+        'cuda: selected pdlp, nothing executed');
+    }
+
+    page = await solve('11-engine-infeasible', 'tests/cli/engine_infeasible_lp.mps');
+    check(page.pipeline === 'model:completed classification:completed presolve:completed dispatch:completed ' +
+      'engine:infeasible postsolve:not_run validation:not_run result:infeasible', `engine infeasible: ${page.pipeline}`);
+    check(page.terminal === 'engine', 'engine-infeasible ends at engine');
+
+    page = await solve('12-unbounded', 'tests/cli/unbounded_lp.mps');
+    check(page.pipeline.includes('engine:unbounded postsolve:not_run validation:not_run result:unbounded'),
+      `unbounded: ${page.pipeline}`);
 
     page = await solve('09-rejected-option', 'tests/cli/simple_lp.mps', { threads: '-1' });
     check(page.summary.startsWith('KAIRO rejected an option') && page.summary.includes('Invalid thread count'),

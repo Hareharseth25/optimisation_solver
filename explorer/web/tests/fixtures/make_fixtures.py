@@ -27,6 +27,11 @@ CASES = {
     "forced_pdlp": ("tests/cli/simple_lp.mps", {"engine": "pdlp", "backend": "cpu"}),
     "limit_reached": ("tests/cli/simple_lp.mps", {"engine": "pdlp", "time_limit_seconds": 1e-30}),
     "rejected_option": ("tests/cli/simple_lp.mps", {"engine": "cplex"}),
+    "engine_infeasible": ("tests/cli/engine_infeasible_lp.mps", {}),
+    "unbounded": ("tests/cli/unbounded_lp.mps", {}),
+    # Selected but not executed: an explicit CUDA request on a build without
+    # CUDA. Regenerate on a non-CUDA build (the default configuration).
+    "cuda_refused": ("tests/cli/simple_lp.mps", {"engine": "pdlp", "backend": "cuda"}),
 }
 
 
