@@ -9,6 +9,19 @@
 
 namespace postsolve {
 
+const char* toString(PostsolveStatus status) noexcept {
+  switch (status) {
+    case PostsolveStatus::Success:              return "success";
+    case PostsolveStatus::InfeasiblePresolve:   return "infeasible_presolve";
+    case PostsolveStatus::BoundViolation:       return "bound_violation";
+    case PostsolveStatus::ConstraintViolation:  return "constraint_violation";
+    case PostsolveStatus::IntegralityViolation: return "integrality_violation";
+    case PostsolveStatus::InvalidMapping:       return "invalid_mapping";
+    case PostsolveStatus::InternalError:        return "internal_error";
+  }
+  return "unknown";
+}
+
 PostsolveResult Postsolver::process(
     const model::Model& originalModel,
     const presolve::PresolveResult& presolveResult,

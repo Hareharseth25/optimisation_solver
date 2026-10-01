@@ -1,0 +1,141 @@
+{
+ "schema": "optimsolver.solve.v1",
+ "instance": {
+  "path": "model.mps",
+  "sha256": "ab0e6a307583c181d39d44f37e2f818e79ddd5a810e7fc004b9c5e71c03830a0",
+  "variables": 2,
+  "constraints": 0,
+  "objective_sense": "max"
+ },
+ "solver": {
+  "name": "optimsolver",
+  "commit": "a717b1bc6498f70408925f559d3f16e2e8bb4f88",
+  "build_type": "Release"
+ },
+ "compute_backend": {
+  "requested": "auto",
+  "executed": "cpu",
+  "requested_device": 0,
+  "executed_device": null,
+  "reason": "engine executed on cpu"
+ },
+ "settings": {
+  "requested_engine": null,
+  "time_limit_seconds": null,
+  "tolerance": 1e-08,
+  "thread_count": 1
+ },
+ "classification": {
+  "problem_class": "LP",
+  "num_binary": 0,
+  "num_integer": 0,
+  "num_continuous": 2,
+  "nonzeros": 0,
+  "coef_range_ratio": 0,
+  "num_rows": 0,
+  "num_columns": 2,
+  "has_network_structure": false,
+  "has_big_m": false,
+  "max_big_m": 0,
+  "has_set_partitioning": false,
+  "symmetric_groups": 0
+ },
+ "presolve": {
+  "infeasible": false,
+  "converged": true,
+  "reduced_variables": 2,
+  "reduced_constraints": 0,
+  "transformations": 0,
+  "original_variables": 2,
+  "original_constraints": 0,
+  "original_nonzeros": 0,
+  "reduced_nonzeros": 0,
+  "transformations_by_type": {
+   "remove_variable": 0,
+   "remove_constraint": 0,
+   "fix_variable": 0,
+   "substitute_variable": 0,
+   "tighten_lower_bound": 0,
+   "tighten_upper_bound": 0
+  }
+ },
+ "dispatch": {
+  "invoked": true,
+  "engine": "trivial",
+  "reason": "no constraints remain; the optimum follows from the bounds alone",
+  "executed_engine": "trivial"
+ },
+ "validation": {
+  "reduced_space": {
+   "passed": true,
+   "status": "success",
+   "failure": null,
+   "max_bound_residual": 0,
+   "max_constraint_residual": 0,
+   "max_bound_residual_scaled": 0,
+   "max_constraint_residual_scaled": 0,
+   "objective": 7,
+   "engine_reported_objective": 7
+  },
+  "original_space": {
+   "passed": true,
+   "status": "success",
+   "failure": null,
+   "max_bound_residual": 0,
+   "max_constraint_residual": 0,
+   "max_bound_residual_scaled": 0,
+   "max_constraint_residual_scaled": 0,
+   "objective": 7,
+   "duals_requested": true
+  }
+ },
+ "termination": {
+  "status": "optimal",
+  "message": "",
+  "dispatched_engine": "trivial",
+  "executed_engine": "trivial",
+  "engine_reason": "no constraints remain; the optimum follows from the bounds alone"
+ },
+ "objective": 7,
+ "dual_bound": null,
+ "mip_gap": null,
+ "primal": [
+  4,
+  1
+ ],
+ "duals": [],
+ "reduced_costs": [
+  2,
+  -1
+ ],
+ "duals_unavailable_reason": null,
+ "self_reported": {
+  "max_bound_residual": 0,
+  "max_constraint_residual": 0,
+  "max_dual_residual": 0,
+  "max_integrality_violation": 0,
+  "integrality_respected": true
+ },
+ "stage_seconds": {
+  "parse": 4.1291e-05,
+  "presolve": 3.292e-06,
+  "solve": 1.4959e-05,
+  "postsolve": 3.042e-06,
+  "validation": 4.16e-07,
+  "classification": 8.75e-07,
+  "dispatch": 4.58e-07,
+  "engine": 1.375e-06,
+  "reduced_validation": 2.458e-06,
+  "total": 1.275e-05
+ },
+ "work": {
+  "iterations": null,
+  "nodes": null,
+  "solve_seconds": 1.275e-05
+ },
+ "variable_names": [
+  "X",
+  "Y"
+ ],
+ "constraint_names": []
+}

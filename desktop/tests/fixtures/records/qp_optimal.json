@@ -1,0 +1,145 @@
+{
+ "schema": "optimsolver.solve.v1",
+ "instance": {
+  "path": "model.mps",
+  "sha256": "bdc7cd1734c9541194a19785b003bdbcda1d97eac2ac83acca3a2a9c85fb2a14",
+  "variables": 2,
+  "constraints": 1,
+  "objective_sense": "min"
+ },
+ "solver": {
+  "name": "optimsolver",
+  "commit": "97c1474774bede37210821c62158296f904cdbb6",
+  "build_type": "Release"
+ },
+ "compute_backend": {
+  "requested": "auto",
+  "executed": "cpu",
+  "requested_device": 0,
+  "executed_device": null,
+  "reason": "auto -> cpu: 6 nonzeros is below cudaNonzeroThreshold"
+ },
+ "settings": {
+  "requested_engine": null,
+  "time_limit_seconds": null,
+  "tolerance": 1e-08,
+  "thread_count": 1
+ },
+ "classification": {
+  "problem_class": "QP",
+  "num_binary": 0,
+  "num_integer": 0,
+  "num_continuous": 2,
+  "nonzeros": 2,
+  "coef_range_ratio": 1,
+  "num_rows": 1,
+  "num_columns": 2,
+  "has_network_structure": false,
+  "has_big_m": false,
+  "max_big_m": 0,
+  "has_set_partitioning": false,
+  "symmetric_groups": 0
+ },
+ "presolve": {
+  "infeasible": false,
+  "converged": true,
+  "reduced_variables": 2,
+  "reduced_constraints": 1,
+  "transformations": 2,
+  "original_variables": 2,
+  "original_constraints": 1,
+  "original_nonzeros": 2,
+  "reduced_nonzeros": 2,
+  "transformations_by_type": {
+   "remove_variable": 0,
+   "remove_constraint": 0,
+   "fix_variable": 0,
+   "substitute_variable": 0,
+   "tighten_lower_bound": 0,
+   "tighten_upper_bound": 2
+  }
+ },
+ "dispatch": {
+  "invoked": true,
+  "engine": "qp",
+  "reason": "convex quadratic minimization (Hessian is PSD)",
+  "executed_engine": "qp"
+ },
+ "validation": {
+  "reduced_space": {
+   "passed": true,
+   "status": "success",
+   "failure": null,
+   "max_bound_residual": 0,
+   "max_constraint_residual": 8.43769498715119e-15,
+   "max_bound_residual_scaled": 0,
+   "max_constraint_residual_scaled": 4.218847493575577e-15,
+   "objective": -4.500000000000009,
+   "engine_reported_objective": -4.500000000000009
+  },
+  "original_space": {
+   "passed": true,
+   "status": "success",
+   "failure": null,
+   "max_bound_residual": 0,
+   "max_constraint_residual": 8.43769498715119e-15,
+   "max_bound_residual_scaled": 0,
+   "max_constraint_residual_scaled": 4.218847493575577e-15,
+   "objective": -4.500000000000009,
+   "duals_requested": true
+  }
+ },
+ "termination": {
+  "status": "optimal",
+  "message": "converged (polishing rejected: no improvement)",
+  "dispatched_engine": "qp",
+  "executed_engine": "qp",
+  "engine_reason": "convex quadratic minimization (Hessian is PSD)"
+ },
+ "objective": -4.500000000000009,
+ "dual_bound": null,
+ "mip_gap": null,
+ "primal": [
+  0.5000000000000047,
+  1.5000000000000038
+ ],
+ "duals": [
+  -0.9999999999999986
+ ],
+ "reduced_costs": [
+  7.882583474838611e-15,
+  6.106226635438361e-15
+ ],
+ "duals_unavailable_reason": null,
+ "self_reported": {
+  "max_bound_residual": 0,
+  "max_constraint_residual": 8.43769498715119e-15,
+  "max_dual_residual": 7.882583474838611e-15,
+  "max_integrality_violation": 0,
+  "integrality_respected": true
+ },
+ "stage_seconds": {
+  "parse": 4.1416e-05,
+  "presolve": 3.792e-06,
+  "solve": 0.000140917,
+  "postsolve": 3.667e-06,
+  "validation": 8.34e-07,
+  "classification": 4.042e-06,
+  "dispatch": 4.075e-05,
+  "engine": 8.2292e-05,
+  "reduced_validation": 2.625e-06,
+  "total": 0.000138834
+ },
+ "work": {
+  "iterations": 50,
+  "nodes": null,
+  "solve_seconds": 0.000138834
+ },
+ "variable_names": [
+  "X",
+  "Y"
+ ],
+ "constraint_names": [
+  "SUM"
+ ]
+}

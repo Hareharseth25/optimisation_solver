@@ -294,6 +294,20 @@ add_executable(test_compute_backend tests/solver/test_compute_backend.cpp)
 target_link_libraries(test_compute_backend PRIVATE solver_orchestrator)
 add_test(NAME test_compute_backend COMMAND test_compute_backend)
 
+# SolveReport: the optional observability record of a solve. Checks that it is
+# filled from the same run as the SolveResult and never changes the answer.
+add_executable(test_solve_report tests/solver/test_solve_report.cpp)
+target_link_libraries(test_solve_report PRIVATE solver_orchestrator)
+add_test(NAME test_solve_report COMMAND test_solve_report)
+
+# The solve-record contract, used the way an external consumer (such as KAIRO
+# Desktop) would: solver::solve(model, options, &report), then the solve.v1 writer.
+# Deliberately links no CLI target -- a consumer needs neither the terminal
+# application nor its text output.
+add_executable(test_solve_contract tests/api/test_solve_contract.cpp)
+target_link_libraries(test_solve_contract PRIVATE solve_report_json)
+add_test(NAME test_solve_contract COMMAND test_solve_contract)
+
 # Ground truth by exhaustive enumeration: every small binary MILP is solved
 # by brute force over all 2^n subsets and compared against the pipeline. No
 # reference solver required, so this stays runnable anywhere.
@@ -301,24 +315,20 @@ add_executable(test_milp_enumeration tests/milp/test_milp_enumeration.cpp)
 target_link_libraries(test_milp_enumeration PRIVATE solver_orchestrator)
 add_test(NAME test_milp_enumeration COMMAND test_milp_enumeration)
 
-# Command-line interface application layer
-add_library(optimsolver_cli
-    cli/nlp_cli.cpp
-    cli/nlp_json_report.cpp
-    cli/argument_parser.cpp
-    cli/cli.cpp
-    cli/mascot.cpp
+# The optimsolver.solve.v1 / optimsolver.nlp.v1 record writer: a pure mapping
+# from (request echo, SolveResult, SolveReport) to JSON. Its own target so any
+# consumer of solver runs -- the CLI and KAIRO Desktop -- can produce
+# or test the serialized contract without linking the terminal application.
+# It runs no solver stage; it only reads what solver::solve() returned.
+add_library(solve_report_json
     cli/json_report.cpp
+    cli/nlp_json_report.cpp
 )
-target_include_directories(optimsolver_cli PUBLIC
+target_include_directories(solve_report_json PUBLIC
     ${PROJECT_SOURCE_DIR}/cli
     ${PROJECT_SOURCE_DIR}/include
 )
-target_link_libraries(optimsolver_cli PUBLIC
-    solver_orchestrator
-    mps_reader
-    postsolver
-)
+target_link_libraries(solve_report_json PUBLIC solver_orchestrator postsolver)
 execute_process(
     COMMAND git rev-parse HEAD
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -329,11 +339,33 @@ execute_process(
 if(NOT OPTIMSOLVER_GIT_COMMIT)
     set(OPTIMSOLVER_GIT_COMMIT "unknown")
 endif()
-target_compile_definitions(optimsolver_cli PRIVATE
+target_compile_definitions(solve_report_json PRIVATE
     OPTIMSOLVER_GIT_COMMIT="${OPTIMSOLVER_GIT_COMMIT}"
     OPTIMSOLVER_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
 )
+target_compile_features(solve_report_json PUBLIC cxx_std_17)
+if(NOT MSVC)
+    target_compile_options(solve_report_json PRIVATE -Wall -Wextra -Wpedantic)
+endif()
 
+# Command-line interface application layer
+add_library(optimsolver_cli
+    cli/nlp_cli.cpp
+    cli/argument_parser.cpp
+    cli/cli.cpp
+    cli/mascot.cpp
+    cli/report_view.cpp
+)
+target_include_directories(optimsolver_cli PUBLIC
+    ${PROJECT_SOURCE_DIR}/cli
+    ${PROJECT_SOURCE_DIR}/include
+)
+target_link_libraries(optimsolver_cli PUBLIC
+    solve_report_json
+    solver_orchestrator
+    mps_reader
+    postsolver
+)
 target_compile_features(optimsolver_cli PUBLIC cxx_std_17)
 if(NOT MSVC)
     target_compile_options(optimsolver_cli PRIVATE -Wall -Wextra -Wpedantic)
@@ -434,7 +466,25 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME backend_json_provenance COMMAND ${Python3_EXECUTABLE}
         ${PROJECT_SOURCE_DIR}/tests/cli/test_backend_json.py $<TARGET_FILE:optimsolver>)
     set_tests_properties(backend_json_provenance PROPERTIES TIMEOUT 180)
+    add_test(NAME solve_report_json COMMAND ${Python3_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/tests/cli/test_solve_report_json.py $<TARGET_FILE:optimsolver>)
+    set_tests_properties(solve_report_json PROPERTIES TIMEOUT 180)
 endif()
+
+# KAIRO Desktop (desktop/): native Qt 6 application, in-process client of
+# KAIRO Core. Built when Qt 6 (Widgets, Concurrent) is available; without Qt
+# the solver, CLI and tests build exactly as before.
+option(KAIRO_BUILD_DESKTOP "Build the KAIRO Desktop application (requires Qt 6)" ON)
+if(KAIRO_BUILD_DESKTOP)
+    find_package(Qt6 6.5 COMPONENTS Core Gui Widgets Concurrent QUIET)
+    if(Qt6_FOUND)
+        message(STATUS "KAIRO Desktop: building with Qt ${Qt6_VERSION}")
+        add_subdirectory(desktop)
+    else()
+        message(STATUS "KAIRO Desktop: Qt 6 not found; skipping the desktop application")
+    endif()
+endif()
+
 # Offline benchmark infrastructure tests have no downloaded-data dependency.
 option(QP_REFERENCE_TESTS "Run independent OSQP comparisons (requires numpy/scipy/osqp)" OFF)
 if(QP_REFERENCE_TESTS AND NOT Python3_Interpreter_FOUND)

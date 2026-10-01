@@ -91,6 +91,109 @@ Each module has a clearly defined interface and data ownership boundary.
   - **Dual Optimality Checks:** Checks stationarity, dual sign feasibility, and complementary slackness against the original constraints (`maxDualResidual`).
   - **Fail-Closed Dual Behavior:** If reduced-space duals were not supplied by the engine, or if any transformation step cannot be reliably inverted, `dualsAvailable` is set to `false` and a specific `dualsUnavailableReason` is recorded, rather than emitting incorrect or unmapped values.
 
+### Observability: `SolveResult` vs `SolveReport` (`include/solver/solve_report.h`)
+- **`SolveResult`** is the solve's outcome: status, original-space point and duals, engine provenance.
+- **`SolveReport`** describes how that outcome was reached: the classification used, a presolve summary (counts, nonzeros, transformations by type), the dispatch decision, reduced- and original-space validation residuals, and per-stage `steady_clock` timings.
+- The report is optional: `solver::solve(model, options, &report)` (and the same for `solveReduced`). Existing two-argument calls are unchanged, and asking for a report never changes the `SolveResult`.
+- The report is filled in place by the **same** run. It must never call `classify()`, `Presolver::run()`, `dispatch()`, an engine or postsolve a second time to obtain its data. If a later stage needs more information, record it where the pipeline already computes it.
+- A section left as `std::nullopt`, or a stage time below zero, means that stage did not run. `stageSeconds.total` always equals `SolveResult::solveSeconds`.
+- Consumers: the CLI requests the report from its one `solver::solve()` call and feeds it to the terminal summary, `--verbose`, and the `optimsolver.solve.v1` JSON record (`classification`, `presolve`, `dispatch`, `validation`, `stage_seconds`). The JSON record is the machine-readable contract; nothing should parse the terminal output.
+
+### Product architecture
+
+```text
+                     KAIRO
+                       │
+              ┌────────┴────────┐
+              │                 │
+         KAIRO Core          Interfaces
+              │                 │
+        ┌─────┴─────┐      ┌────┴─────┐
+        │           │      │          │
+     Engines   solve() API Desktop    CLI
+                          (Qt 6)   (optimsolver)
+                           │
+                 ┌─────────┼─────────┐
+               macOS    Windows    Linux
+```
+
+- **One solver implementation:** KAIRO Core (model IR, MPS reader, classification, presolve, dispatcher, engines, postsolve, validation).
+- **One execution path:** `solver::solve(model, options, &report)`. Both interfaces call it once per run.
+- **One structured record:** `optimsolver.solve.v1`, written only by `cli::writeJsonReport` (the `solve_report_json` library) from that call's `SolveResult` and `SolveReport`.
+- **One interpretation path:** the desktop's `desktop/src/record` readers. A live run, a saved run and an imported run all go through them.
+- There is **no web layer**. No browser, HTTP server or localhost port is involved, and building, running or packaging KAIRO needs no Python or JavaScript. Some optional core test scripts use Python. An earlier web Explorer prototype has been retired. Its real record fixtures now live in `desktop/tests/fixtures/records`.
+
+### Solve-record contract
+
+Any interface is a **consumer** of solver runs, never a participant in them.
+
+```text
+   model + SolverOptions
+            │
+            ▼
+  solver::solve(model, options, &report)      ← single source of truth
+            │                     │
+      SolveResult            SolveReport
+      (outcome)              (how it ran)
+            └─────────┬───────────┘
+                      ▼
+   cli::writeJsonReport()  [solve_report_json]   pure mapping, runs no stage
+                      │
+                      ▼
+          optimsolver.solve.v1 record
+            ┌─────────┴──────────────┐
+            ▼                        ▼
+   optimsolver solve --json     KAIRO Desktop (in-process,
+   (CLI, process boundary)      links solve_report_json)
+```
+
+1. Interfaces contain no solver logic.
+2. Interfaces never invoke individual stages (`classify`, `Presolver::run`, `dispatch`, engines, postsolve). They request one solve.
+3. Nothing parses CLI terminal output. The terminal text is for people; the JSON record is the machine contract.
+4. The solver core is the single source of truth. Every value in the record comes from the one `solver::solve()` call; the writer reads it and computes nothing.
+5. `SolveResult` is the outcome: status, point, duals, engine provenance, integrality verdict.
+6. `SolveReport` is the execution observability: classification, presolve summary, dispatch decision, stage timings, validation residuals.
+7. `optimsolver.solve.v1` is the serialization contract. It changes only additively; a breaking change would need a new schema id.
+
+Not part of the contract:
+- **Run identifiers.** A run is identified by `instance.sha256`, `settings` and `solver.commit`/`build_type`. The desktop gives each saved run a local UUID.
+- **Wall-clock timestamps.** Only durations are recorded.
+
+`tests/api/test_solve_contract.cpp` exercises the contract without the CLI, and `tests/cli/test_solve_report_json.py` exercises it through the process.
+
+Every model the CLI or desktop accepts produces a record, including one the MPS reader rejects. That record has `invalid_model`, the reader's message in `termination.message`, and `instance.variables`/`constraints` set to null. Only an option value KAIRO rejects before reading the model leaves no record.
+
+### KAIRO Desktop (`desktop/`)
+
+A native **Qt 6 Widgets / C++17** application for macOS, Windows and Linux. It works locally and offline: it needs no browser or web server, makes no network calls and has no account.
+
+- `desktop/src/core/KairoSession` is the only code that touches the solver. It calls the core in-process (`mps::MpsReader` → `Model::validate()` → `solver::solve(model, options, &report)`) and has `cli::writeJsonReport` serialize the result in memory. The per-run order is the CLI's, so unreadable or invalid models produce the same record shape (no report, `dispatch: null`).
+- `desktop/src/record` (Qt Core only) turns a record into what is shown:
+  - `RecordReaders`: result, evidence, pipeline, model analysis, presolve impact, dispatch;
+  - `Comparison`: two runs side by side.
+
+  They are pure readers:
+  - the only arithmetic is the presolve reduction percentage and stated differences between two recorded values;
+  - **`dispatch.reason` is shown verbatim**;
+  - the selected and executed engines stay separate;
+  - the pseudo-engines (`infeasible`, `trivial`, `unsupported`) are outcomes;
+  - engine time is "execution" only when an engine executed, and otherwise "engine path".
+- **Trust wording** never exceeds the record:
+  - KAIRO's own validation (`validation.*`, `self_reported.*`) is the only source of *Checked*. Claims without a recorded certificate, bound or gap read *Reported by engine* or *Proved by presolve*.
+  - `integrality_respected: false` on an integer model turns `optimal` into "Optimal for the continuous relaxation", and an integer optimum is "Optimal — according to the solver".
+  - With no solution point, nothing is shown as validated.
+  - The words "certified", "guaranteed" and "proven optimal" are never used.
+- `desktop/src/history/RunStore` keeps saved runs as local JSON files (`QStandardPaths`, format `kairo.desktop.saved_run.v1`): the unchanged record plus a few local facts, and never the model text.
+  - **Export** writes the record unchanged.
+  - **Import** checks the record's shape and stores it marked imported. It never runs the solver or anything else.
+- **Comparison** treats runs as the same model only when their recorded input SHA-256 values match. With different hashes, objectives, residuals and presolve reductions are not compared. Values are stated, never ranked.
+- `desktop/src/ui` holds widgets only. Build, packaging and platform status are in `desktop/README.md`.
+
+**Live progress and cancellation (not implemented).** `solver::solve()` is synchronous and reports only after it finishes, so the desktop shows only "Running KAIRO…".
+- Stage-level events (classified, presolved, dispatched, engine started or finished, validated) need no redesign: an optional observer in `SolverOptions`, invoked at the orchestrator's existing stage boundaries, as the report already is.
+- Engine-level progress (iterations, gap, incumbents) is the real obstacle. None of the affine engines (PDLP, dual simplex, barrier, ADMM, branch-and-cut, MIQP) exposes an iteration hook today. Only the NLP solver has an iteration callback.
+- There is no cancellation API besides the time limit.
+
 ---
 
 ## 3. Implemented Solver Engines

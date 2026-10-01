@@ -3,6 +3,7 @@
 #include "argument_parser.h"
 #include "mascot.h"
 #include "json_report.h"
+#include "report_view.h"
 
 #include "model/model.h"
 #include "mps/mps_reader.h"
@@ -123,15 +124,19 @@ int solveModel(const model::Model& model,
                std::ostream& err,
                const TerminalStyle& style,
                JsonReportInput* report = nullptr,
-               const std::optional<std::string>& jsonPath = std::nullopt) {
+               const std::optional<std::string>& jsonPath = std::nullopt,
+               bool verbose = false) {
     const auto emit = [&](const solver::SolveResult& r) {
         return report == nullptr || emitJsonRecord(*report, r, jsonPath, err);
     };
 
+    // One solve, one report: everything below that describes how the solve
+    // ran -- dashboard, --verbose, JSON -- reads this object.
+    solver::SolveReport solveReport;
     solver::SolveResult solveResult;
     const auto solveStart = std::chrono::steady_clock::now();
     try {
-        solveResult = solver::solve(model, solverOptions);
+        solveResult = solver::solve(model, solverOptions, &solveReport);
     } catch (const std::exception& ex) {
         printError(err, "Solver failed", ex.what());
         return 1;
@@ -139,20 +144,27 @@ int solveModel(const model::Model& model,
     if (report != nullptr) {
         report->solveSeconds =
             std::chrono::duration<double>(std::chrono::steady_clock::now() - solveStart).count();
+        report->report = &solveReport;
     }
+    const auto printDetails = [&]() {
+        if (verbose) printReportDetails(out, model, solveResult, solveReport, style);
+    };
 
     if (solveResult.status == solver::SolveStatus::InvalidModel) {
         printError(err, "Solver error: Invalid model", solveResult.message);
+        printDetails();
         emit(solveResult);
         return 1;
     }
     if (solveResult.status == solver::SolveStatus::NumericalFailure) {
         printError(err, "Solver error: Numerical failure", solveResult.message);
+        printDetails();
         emit(solveResult);
         return 1;
     }
     if (solveResult.status == solver::SolveStatus::Unsupported) {
         printError(err, "Solver error: Unsupported problem", solveResult.message);
+        printDetails();
         emit(solveResult);
         return 1;
     }
@@ -166,6 +178,11 @@ int solveModel(const model::Model& model,
     dash.presolveInfeasible = solveResult.engine == solver::Engine::Infeasible;
     dash.engineName = dash.presolveInfeasible ? "presolve"
                                             : solver::toString(solveResult.executedEngine);
+    dash.classification = describeClassification(solveReport);
+    if (solveReport.presolve) {
+        dash.originalNonzeros = solveReport.presolve->originalNonzeros;
+        dash.reducedNonzeros = solveReport.presolve->reducedNonzeros;
+    }
     printSolveDashboard(out, dash, style);
 
     SolveResultInfo resInfo;
@@ -178,6 +195,7 @@ int solveModel(const model::Model& model,
     resInfo.solveSeconds = solveResult.solveSeconds;
     resInfo.message = solveResult.message;
     printSolveResult(out, resInfo, style);
+    printReportSummary(out, solveReport, style);
 
     // Only when a backend was asked for or a GPU actually ran, so the default
     // output is unchanged.
@@ -201,6 +219,7 @@ int solveModel(const model::Model& model,
         }
         // Proved infeasible, proved unbounded, or a limit with no incumbent:
         // all are legitimate outcomes and each still has to produce a record.
+        printDetails();
         return emit(solveResult) ? 0 : 1;
     }
 
@@ -221,6 +240,7 @@ int solveModel(const model::Model& model,
         }
     }
 
+    printDetails();
     return emit(solveResult) ? 0 : 1;
 }
 
@@ -235,7 +255,40 @@ int solveFile(const std::string& modelPath,
               const TerminalStyle& style,
               const std::optional<std::string>& jsonPath,
               const std::optional<std::string>& dumpModelPath,
-              const std::optional<int>& threadCount) {
+              const std::optional<int>& threadCount,
+              bool verbose) {
+    solver::SolverOptions solverOptions;
+    if (solverName.has_value()) {
+        solverOptions.forceEngine = solver::parseEngine(*solverName);
+    }
+    if (timeLimitSeconds.has_value()) {
+        solverOptions.timeLimitSeconds = *timeLimitSeconds;
+    }
+    if (threadCount.has_value()) {
+        solverOptions.threadCount = *threadCount;
+    }
+    if (backendName.has_value()) {
+        solverOptions.backend =
+            solver::parseComputeBackend(*backendName).value_or(solver::ComputeBackend::Auto);
+    }
+    if (cudaDevice.has_value()) {
+        solverOptions.cudaDevice = *cudaDevice;
+    }
+
+    JsonReportInput report;
+    report.instancePath = modelPath;
+    report.requestedEngine = solverName.value_or(std::string{});
+    report.requestedBackend = backendName.value_or("auto");
+    report.cudaDevice = cudaDevice.value_or(0);
+    report.timeLimitSeconds = timeLimitSeconds.value_or(0.0);
+    report.threadCount = threadCount.value_or(0);
+    report.tolerance = solverOptions.tolerance;
+    if (jsonPath.has_value() && !dumpModelPath.has_value()) {
+        // Only hashed when a record is actually being written; it is a full
+        // pass over the file and pointless otherwise.
+        report.instanceSha256 = sha256File(modelPath);
+    }
+
     mps::MpsReader reader;
     model::Model model;
     const auto parseStart = std::chrono::steady_clock::now();
@@ -243,13 +296,34 @@ int solveFile(const std::string& modelPath,
         model = reader.read(modelPath);
     } catch (const std::exception& ex) {
         printError(err, "Failed to read MPS file", "Path: " + modelPath + "\n" + ex.what());
+        // A model that cannot be read is an outcome too: the record says
+        // invalid_model with the reader's reason, and carries no model data.
+        if (!dumpModelPath.has_value()) {
+            report.parseSeconds =
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - parseStart).count();
+            solver::SolveResult unreadable;
+            unreadable.status = solver::SolveStatus::InvalidModel;
+            unreadable.message = std::string("failed to read MPS file: ") + ex.what();
+            emitJsonRecord(report, unreadable, jsonPath, err);
+        }
         return 1;
     }
-    const double parseSeconds =
+    report.parseSeconds =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - parseStart).count();
+    report.originalVariables = model.variables.size();
+    report.originalConstraints = model.constraints.size();
+    report.originalModel = &model;
 
     if (!model.validate()) {
         printError(err, "Invalid model", "Model failed structural validation.");
+        // Refused before the solver was called: the record says so, with no
+        // classification, presolve, dispatch or validation sections.
+        if (!dumpModelPath.has_value()) {
+            solver::SolveResult refused;
+            refused.status = solver::SolveStatus::InvalidModel;
+            refused.message = "model failed structural validation";
+            emitJsonRecord(report, refused, jsonPath, err);
+        }
         return 1;
     }
 
@@ -272,45 +346,8 @@ int solveFile(const std::string& modelPath,
         return 0;
     }
 
-    solver::SolverOptions solverOptions;
-    if (solverName.has_value()) {
-        solverOptions.forceEngine = solver::parseEngine(*solverName);
-    }
-    if (timeLimitSeconds.has_value()) {
-        solverOptions.timeLimitSeconds = *timeLimitSeconds;
-    }
-    if (threadCount.has_value()) {
-        solverOptions.threadCount = *threadCount;
-    }
-    if (backendName.has_value()) {
-        solverOptions.backend =
-            solver::parseComputeBackend(*backendName).value_or(solver::ComputeBackend::Auto);
-    }
-    if (cudaDevice.has_value()) {
-        solverOptions.cudaDevice = *cudaDevice;
-    }
-
-
-    JsonReportInput report;
-    report.instancePath = modelPath;
-    report.requestedEngine = solverName.value_or(std::string{});
-    report.requestedBackend = backendName.value_or("auto");
-    report.cudaDevice = cudaDevice.value_or(0);
-    report.timeLimitSeconds = timeLimitSeconds.value_or(0.0);
-    report.threadCount = threadCount.value_or(0);
-    report.tolerance = solverOptions.tolerance;
-    report.parseSeconds = parseSeconds;
-    report.originalVariables = model.variables.size();
-    report.originalConstraints = model.constraints.size();
-    report.originalModel = &model;
-    if (jsonPath.has_value()) {
-        // Only hashed when a record is actually being written; it is a full
-        // pass over the file and pointless otherwise.
-        report.instanceSha256 = sha256File(modelPath);
-    }
-
     return solveModel(model, solverOptions, outputPath, out, err, style,
-                      &report, jsonPath);
+                      &report, jsonPath, verbose);
 }
 
 // Session state maintained throughout interactive mode
@@ -649,14 +686,10 @@ void solveInteractive(std::ostream& out, std::ostream& err, std::istream& in, In
         fileName = fileName.substr(slashPos + 1);
     }
 
-    std::string defaultEngine = "dual_simplex / pdlp";
-    if (session.classification.problemClass == solver::ProblemClass::MILP) {
-        defaultEngine = "branch_and_cut";
-    } else if (session.classification.problemClass == solver::ProblemClass::QP) {
-        defaultEngine = "qp";
-    }
-
-    std::string engineName = session.forcedEngine.has_value() ? *session.forcedEngine : (defaultEngine + " (Auto)");
+    // The engine is the dispatcher's decision, made after presolve; it is
+    // shown on the result screen rather than guessed here.
+    std::string engineName = session.forcedEngine.has_value()
+        ? *session.forcedEngine : std::string("automatic (chosen after presolve)");
 
     out << "  " << s.dim() << "Model              " << s.reset() << fileName << "\n";
     out << "  " << s.dim() << "Problem            " << s.reset() << solver::toString(session.classification.problemClass) << "\n";
@@ -673,9 +706,10 @@ void solveInteractive(std::ostream& out, std::ostream& err, std::istream& in, In
     animateSolveProgress(out, s, "Presolving model...");
     animateSolveProgress(out, s, "Executing numerical solver engine...");
 
+    solver::SolveReport solveReport;
     solver::SolveResult solveResult;
     try {
-        solveResult = solver::solve(session.model, solverOptions);
+        solveResult = solver::solve(session.model, solverOptions, &solveReport);
     } catch (const std::exception& ex) {
         out << "  " << s.boldRed() << "✗ Solver failed with exception: " << ex.what() << s.reset() << "\n\n";
         return;
@@ -732,21 +766,42 @@ void solveInteractive(std::ostream& out, std::ostream& err, std::istream& in, In
     out << "  " << s.dim() << "Problem type          " << s.reset()
         << solver::toString(session.classification.problemClass) << "\n";
     out << "  " << s.dim() << "Engine                " << s.reset()
-        << actualEngine << "\n\n";
+        << actualEngine << "\n";
+    if (solveReport.dispatch.dispatcherInvoked && !solveReport.dispatch.reason.empty()) {
+        out << "  " << s.dim() << "Dispatch reason       " << s.reset()
+            << solveReport.dispatch.reason << "\n";
+    }
+    out << "\n";
 
     printDivider("MODEL SIZE");
-    out << "  " << s.dim() << "Variables             " << s.reset()
-        << formatNumber(session.classification.hints.numColumns) << " → "
-        << formatNumber(solveResult.reducedVariableCount) << "\n";
-    out << "  " << s.dim() << "Constraints           " << s.reset()
-        << formatNumber(session.classification.hints.numRows) << " → "
-        << formatNumber(solveResult.reducedConstraintCount) << "\n\n";
+    if (solveReport.presolve) {
+        const solver::PresolveSummary& p = *solveReport.presolve;
+        out << "  " << s.dim() << "Variables             " << s.reset()
+            << formatNumber(static_cast<std::int64_t>(p.originalVariables)) << " → "
+            << formatNumber(static_cast<std::int64_t>(p.reducedVariables)) << "\n";
+        out << "  " << s.dim() << "Constraints           " << s.reset()
+            << formatNumber(static_cast<std::int64_t>(p.originalConstraints)) << " → "
+            << formatNumber(static_cast<std::int64_t>(p.reducedConstraints)) << "\n";
+        out << "  " << s.dim() << "Nonzeros              " << s.reset()
+            << formatNumber(p.originalNonzeros) << " → "
+            << formatNumber(p.reducedNonzeros) << "\n\n";
+    } else {
+        out << "  " << s.dim() << "Presolve              " << s.reset() << "not run\n\n";
+    }
 
     printDivider("SOLUTION");
     if (solveResult.hasPrimal) {
         out << "  " << s.dim() << "Objective             " << s.reset() << s.bold()
             << std::setprecision(9) << solveResult.objectiveValue << s.reset() << "\n";
-        out << "  " << s.dim() << "Primal feasibility    " << s.reset() << s.boldGreen() << "✓" << s.reset() << "\n";
+        out << "  " << s.dim() << "Primal feasibility    " << s.reset() << s.boldGreen() << "✓" << s.reset();
+        if (solveReport.postsolve && solveReport.postsolve->passed) {
+            std::ostringstream residuals;
+            residuals << std::defaultfloat << std::setprecision(3)
+                      << " (max bound violation " << solveReport.postsolve->maxBoundResidual
+                      << ", max row violation " << solveReport.postsolve->maxConstraintResidual << ")";
+            out << residuals.str();
+        }
+        out << "\n";
     } else {
         out << "  " << s.dim() << "Objective             " << s.reset() << "Not available\n";
         out << "  " << s.dim() << "Primal feasibility    " << s.reset()
@@ -862,7 +917,7 @@ int runInteractive(std::ostream& out, std::ostream& err, std::istream& in) {
             } else if (choice == "5" || choice == "help") {
                 displayHelpScreen(out, in, style);
             } else if (choice == "6" || choice == "exit" || choice == "quit" || choice == "q") {
-                out << "Exiting Optimisation Solver.\n";
+                out << "Exiting KAIRO.\n";
                 break;
             } else {
                 out << style.boldYellow() << "Unrecognised option. Please select 1 to 6." << style.reset() << "\n\n";
@@ -877,7 +932,7 @@ int runInteractive(std::ostream& out, std::ostream& err, std::istream& in) {
             } else if (choice == "4" || choice == "help") {
                 displayHelpScreen(out, in, style);
             } else if (choice == "5" || choice == "exit" || choice == "quit" || choice == "q") {
-                out << "Exiting Optimisation Solver.\n";
+                out << "Exiting KAIRO.\n";
                 break;
             } else {
                 out << style.boldYellow() << "Unrecognised option. Please select 1 to 5." << style.reset() << "\n\n";
@@ -921,7 +976,8 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err, std::istre
         const auto& opts = parseResult.solveOptions;
         return solveFile(opts.modelPath, opts.solver, opts.timeLimitSeconds, opts.outputPath,
                          opts.backend, opts.cudaDevice,
-                         out, err, style, opts.jsonPath, opts.dumpModelPath, opts.threadCount);
+                         out, err, style, opts.jsonPath, opts.dumpModelPath, opts.threadCount,
+                         opts.verbose);
     }
 
     printError(err, "Unhandled command", "");

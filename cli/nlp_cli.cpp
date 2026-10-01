@@ -21,8 +21,8 @@ bool sameFile(const std::string& a, const std::string& b) {
 int runNlp(const SolveOptions& options, std::ostream& out, std::ostream& err,
            const nlp::Input* loaded, solver::NlpSolveResult* stored) {
     try {
-        if (options.dumpModelPath || options.threadCount)
-            throw std::invalid_argument("--dump-model and --threads are not supported for NLP");
+        if (options.dumpModelPath || options.threadCount || options.verbose)
+            throw std::invalid_argument("--dump-model, --threads and --verbose are not supported for NLP");
         const auto requested = options.solver ? solver::parseEngine(*options.solver) : std::optional<solver::Engine>{};
         if (options.solver && (!requested || *requested != solver::Engine::Nlp))
             throw std::invalid_argument("a nonlinear model requires --solver nlp (or automatic selection)");
