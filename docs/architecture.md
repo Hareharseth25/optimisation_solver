@@ -194,6 +194,75 @@ A native **Qt 6 Widgets / C++17** application for macOS, Windows and Linux. It w
 - Engine-level progress (iterations, gap, incumbents) is the real obstacle. None of the affine engines (PDLP, dual simplex, barrier, ADMM, branch-and-cut, MIQP) exposes an iteration hook today. Only the NLP solver has an iteration callback.
 - There is no cancellation API besides the time limit.
 
+### Addendum (2026-10-02): KAIRO v1 as merged
+
+*Added after PR #20 (`release/kairo-v1`) was merged into `main`. The sections above are unchanged; this addendum records the merged state.*
+
+**Product structure.** KAIRO is the product; the solver core in this repository (historically documented as OptimSolver) is KAIRO Core.
+
+```mermaid
+flowchart TB
+    K["KAIRO"]
+    subgraph CORE ["KAIRO Core"]
+        direction TB
+        IR["Model IR"] --> PV["MPS parsing + structural validation"]
+        PV --> CL["Classification"] --> PS["Presolve"] --> DP["Dispatcher"]
+        DP --> EN["Numerical engines"] --> PO["Postsolve"] --> VA["Validation"]
+    end
+    CLI["KAIRO CLI<br/>optimsolver"]
+    GUI["KAIRO Desktop<br/>Qt 6 native GUI"]
+    K --> CORE
+    K --> CLI
+    K --> GUI
+    CLI -- "solver::solve()" --> CORE
+    GUI -- "solver::solve(), in-process" --> CORE
+```
+
+**One solve, as the desktop runs it.** `desktop/src/core/KairoSession` follows the CLI's per-run order on a worker thread. The interface thread sees nothing until the call returns, so it shows only "Running KAIRO…". There is no progress estimate and no cancel; a time limit is the only way to bound a solve.
+
+```mermaid
+sequenceDiagram
+    participant UI as KAIRO Desktop (UI thread)
+    participant S as KairoSession (worker thread)
+    participant Core as KAIRO Core
+    participant W as solve_report_json writer
+    UI->>S: SolveRequest (model path, engine, backend, CUDA device, time limit, threads)
+    S->>Core: mps::MpsReader + Model::validate()
+    alt unreadable or structurally invalid
+        S->>W: request echo + invalid_model SolveResult with the reason (no report)
+    else valid model
+        S->>Core: solver::solve(model, options, &report)
+        Core-->>S: SolveResult + SolveReport
+        S->>W: request echo + SolveResult + SolveReport
+    end
+    W-->>S: optimsolver.solve.v1 record (in memory)
+    S-->>UI: record
+    UI->>UI: desktop/src/record readers → views
+```
+
+**Record lifecycle.** Every view is built from an `optimsolver.solve.v1` record by the same readers, whatever the record's source.
+
+```mermaid
+flowchart LR
+    LIVE["Live solve<br/>(in-process)"] --> REC["optimsolver.solve.v1 record"]
+    IMP["Import Run<br/>(shape-checked file;<br/>never re-solved)"] --> REC
+    CLIJ["optimsolver solve --json<br/>output file"] -. "importable" .-> IMP
+    REC --> READ["desktop/src/record<br/>RecordReaders · Comparison"]
+    READ --> VIEW["Result · Evidence · Pipeline · Model analysis ·<br/>Presolve impact · Dispatch · Execution · Validation"]
+    REC --> SAVE["Saved run (local JSON:<br/>record + local facts,<br/>no model file)"]
+    SAVE --> REC
+    REC --> EXP["Export Run<br/>(record unchanged)"]
+    SAVE --> CMP["Comparison of two saved runs<br/>same model only when the recorded SHA-256 values match;<br/>differences stated, never ranked"]
+```
+
+**Scope.** The desktop covers affine models read from MPS/QPS (LP, MILP, convex QP, convex MIQP) and their `optimsolver.solve.v1` records. Smooth nonlinear models (`.nlp`, `optimsolver.nlp.v1`) remain CLI-only.
+
+**Platform status (2026-10-02).**
+- The `desktop` GitHub Actions workflow (`.github/workflows/desktop.yml`) passed on `ubuntu-24.04`, `windows-2022` and `macos-14` for the merged release commit (`bcd132f`). On each runner it built the desktop app, ran the desktop tests, installed and launched the app with the Qt runtime deployed, and produced a Linux AppImage, a Windows zip or a macOS DMG.
+- macOS was also validated locally, as documented in `desktop/README.md`.
+- Windows ARM64 is not supported. Linux ARM64 is not validated or supported.
+- macOS builds are ad hoc signed, not Developer ID signed or notarized.
+
 ---
 
 ## 3. Implemented Solver Engines

@@ -194,3 +194,30 @@ The AppImage carries Qt and its plugins. The X11/xcb system libraries (e.g. `lib
 **Not supported:**
 - **Windows ARM64.** Core code (`pdlp_engine/src/parallel.cpp`, `qp_engine/src/parallel.cpp`) uses GCC-style inline assembly under `_M_ARM64`, which MSVC rejects. It was deliberately left unchanged in this release.
 - **Linux ARM64.** Not configured or validated.
+
+## Current status (2026-10-02, after PR #20 was merged)
+
+*This section supersedes the platform status above, which was written before CI had run and is kept as the pre-merge record.*
+
+PR #20 (`release/kairo-v1`) is merged into `main`. The `desktop` workflow (`.github/workflows/desktop.yml`) passed for the release commit `bcd132f`, on both the push run and the pull-request run:
+
+| Runner | Result | What ran |
+|---|---|---|
+| `ubuntu-24.04` (Linux x64, GCC) | passed | build (official Qt 6.8) → desktop CTest cases → install with Qt deployment → installed app launched under Xvfb with the native platform plugin → AppImage built and launched → artifact `kairo-desktop-Linux` |
+| `windows-2022` (Windows x64, MSVC) | passed | build → desktop CTest cases → install with `windeployqt` and the MSVC runtime → installed `KAIRO.exe` launched with the native platform plugin → zip → artifact `kairo-desktop-Windows` |
+| `macos-14` | passed | build → desktop CTest cases → install with `macdeployqt` → bundle checked for build-machine library paths, signature verified → installed app launched with the native platform plugin → DMG → artifact `kairo-desktop-macOS` |
+
+In each launch step the installed application solved `tests/cli/presolve_reduction.mps` through `--capture`. The step required the rendered pipeline to finish at `result:completed`.
+
+The macOS development and release validation is unchanged: it was done locally, as documented above.
+
+**Supported targets:**
+- **Supported and checked in CI:** macOS, Windows x64, Linux x64.
+- **Not supported:** Windows ARM64 (reason above).
+- **Not validated, not supported:** Linux ARM64.
+
+**Still open:**
+- macOS builds are **ad hoc signed** only. Developer ID signing and notarization are not done (commands under "Packaging and release artifacts").
+- Windows code signing is not done.
+- **No cancellation.** KAIRO Core has no cancellation API, so the desktop offers none; the time limit bounds a solve.
+- CI checks build, tests, deployment and a real solve through each installed app. It does not exercise the interactive GUI by hand, and it is not a performance or scale validation.

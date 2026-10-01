@@ -370,3 +370,16 @@ The follow-up review fixes were validated on macOS without a CUDA toolkit:
 Not verified: CUDA compilation, execution, sanitizer results, performance, or
 GPU test registration in an actual CUDA build. Run section 10 on NVIDIA hardware
 before treating the GPU path as validated.
+
+## Addendum (2026-10-02): CUDA in KAIRO Desktop
+
+*Added for KAIRO v1 (PR #20). Nothing above is changed.*
+
+KAIRO Desktop exposes the same backend selection as the CLI: **Auto / CPU / CUDA** and the CUDA device. It offers these only for engines that have a CUDA backend (automatic dispatch, PDLP and ADMM QP), and passes them unchanged into `SolverOptions`. It makes no backend decision of its own.
+
+What happens follows the record:
+- `compute_backend.executed` says what ran.
+- `compute_backend.reason` is shown word for word.
+- An explicit CUDA request that cannot run is shown as **"Requested backend unavailable"**, not as a solver failure. As section 4 says, such a request is never silently run on the CPU.
+
+The desktop builds produced by the `desktop` GitHub Actions workflow are configured without `OPTIMSOLVER_ENABLE_CUDA`, so they are CPU-only. The desktop's CUDA path has not been exercised on NVIDIA hardware; the verification status above applies to it unchanged.

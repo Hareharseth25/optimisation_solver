@@ -471,3 +471,67 @@ The interactive Open Model flow also accepts `.nlp` files. Automatic selection
 chooses NLP; `--solver nlp` makes that selection explicit. `--json` writes a
 versioned diagnostic record and `--output` writes the evaluated iterate with
 status and feasibility labels. NLP does not use affine presolve/postsolve.
+
+---
+
+## KAIRO Desktop (graphical application)
+
+*Added 2026-10-02 for KAIRO v1 (PR #20). The sections above, which describe the command-line solver, are unchanged and still apply.*
+
+KAIRO (*Kernel for Advanced Integer & Real Optimization*) is the product name for this solver. KAIRO Desktop is its native graphical application for macOS, Windows and Linux. It runs the same solver as the CLI, inside the application (no separate process). It works fully offline, with no browser, web server or network connection, and needs no Python or JavaScript.
+
+### Getting it
+
+Build it from source (Qt 6.5 or newer is required; see [desktop/README.md](desktop/README.md) for each platform):
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=<path to Qt 6>
+cmake --build build --target KAIRO
+```
+
+The `desktop` GitHub Actions workflow also produces a macOS DMG, a Windows x64 zip and a Linux x64 AppImage as workflow artifacts. The macOS build is ad hoc signed, not notarized. A downloaded copy may therefore be blocked by Gatekeeper until you allow it under System Settings → Privacy & Security.
+
+### Solving a model
+
+1. **File → Open Model…** (Ctrl+O; ⌘O on macOS), or drop an `.mps`/`.qps` file on the window. The sidebar shows the model's name, size, objective sense and structural check.
+2. Choose the **engine** (Automatic lets KAIRO's dispatcher decide), **backend** (Auto / CPU / CUDA, only for engines with a CUDA backend), **time limit**, **threads** and **CUDA device**.
+3. **Run → Solve** (Ctrl+R). The window shows "Running KAIRO…" until the solve returns. A solve cannot be cancelled; set a time limit to bound it.
+4. Read the analysis:
+
+| Section | Answers |
+|---|---|
+| Result | Status, objective, engine executed, backend, total time |
+| Evidence | What supports the result, and how far it was checked |
+| Solver pipeline | Which stages ran and where the run ended (click a stage to jump to its details) |
+| Model analysis | What KAIRO received: class, size, variable types, structure |
+| Presolve impact | What presolve removed or tightened |
+| Dispatch decision | Which engine was selected, and KAIRO's reason, word for word |
+| Execution | What actually ran, on which backend, and the time spent |
+| Validation details | KAIRO's checks on the reduced and the original model |
+
+Smooth nonlinear (`.nlp`) models are solved with the CLI ([Smooth nonlinear programming](#smooth-nonlinear-programming)); the desktop opens MPS/QPS models.
+
+### Reading the result
+
+The desktop words a result exactly as strongly as KAIRO's record supports:
+
+| Wording | Meaning |
+|---|---|
+| **Checked** / **Verified by KAIRO validation** | KAIRO's own validation ran on the returned point and passed |
+| **Not checked** | The check exists but did not run for this solve |
+| **Not available** | KAIRO does not record this value for this kind of model (e.g. a dual bound for MILP) |
+| **Reported by engine** | The engine reported it; KAIRO did not independently confirm it |
+| **Proved by presolve** | Presolve itself established the outcome (e.g. infeasibility) |
+| **Optimality not established** | The run stopped at a limit; any point returned is not claimed optimal |
+| **Optimal — according to the solver** | An integer model solved to optimality by its engine; global optimality evidence is not independently recorded |
+| **Optimal for the continuous relaxation** | An engine solved the model without its integer requirements; the point is not integer-optimal |
+
+### Saved runs, comparison, export and import
+
+- **Run → Save Run** (Ctrl+S) keeps the run on this computer. A saved run is KAIRO's result record only. The model file is never copied. Help → About KAIRO shows the folder.
+- In **Saved Runs**, press Enter to open the selected run, and Delete/Backspace to delete it. **Clear all…** asks for confirmation first. **Run → Show Current Run** (Ctrl+0) returns to the latest solve.
+- **Compare:** select two saved runs and choose **Run → Compare Selected Runs** (Ctrl+Shift+C). Objectives, residuals and presolve results are compared only when both runs recorded the same model fingerprint (SHA-256). Differences are stated as values, never ranked.
+- **File → Export Run…** (Ctrl+E) writes the shown run as an `optimsolver.solve.v1` JSON record, the same format as `optimsolver solve <model> --json <file>`.
+- **File → Import Run…** (Ctrl+I) opens such a record, including one written by the CLI. The record is checked, shown and marked *Imported*. It is displayed exactly as it was recorded and is never re-solved.
+- **View → Go to …** (Ctrl+1 … Ctrl+8) jumps to each analysis section.
+- The window follows the system's light or dark appearance.
