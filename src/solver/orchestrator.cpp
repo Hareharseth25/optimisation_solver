@@ -1,6 +1,9 @@
 #include "solver/orchestrator.h"
 
 #include "adapter/pdlp_adapter.h"
+#include "barrier/barrier_adapter.h"
+#include "solver/crossover.h"
+#include "qp/convexity.h"
 #include "milp/branch_and_bound.h"
 #include "milp/dual_simplex_solver.h"
 #include "miqp/branch_and_bound.h"
@@ -71,6 +74,24 @@ SolveStatus normalise(milp::MilpStatus status) noexcept {
         case milp::MilpStatus::Unbounded:  return SolveStatus::Unbounded;
         case milp::MilpStatus::NodeLimit:  return SolveStatus::LimitReached;
         case milp::MilpStatus::TimeLimit:  return SolveStatus::LimitReached;
+    }
+    return SolveStatus::NumericalFailure;
+}
+
+// SuspectedInfeasibleOrUnbounded maps to LimitReached, deliberately. The
+// barrier method computes no certificate, so mapping it to Infeasible or
+// Unbounded would publish a proof that does not exist -- the same false verdict
+// that has been fixed in this codebase before. LimitReached means "stopped with
+// no proof either way", which is exactly what happened; the message keeps the
+// specifics. The dual simplex does produce certificates for both.
+SolveStatus normalise(barrier::Status status) noexcept {
+    switch (status) {
+        case barrier::Status::Optimal: return SolveStatus::Optimal;
+        case barrier::Status::IterationLimit:
+        case barrier::Status::TimeLimit:
+        case barrier::Status::SuspectedInfeasibleOrUnbounded: return SolveStatus::LimitReached;
+        case barrier::Status::NumericalFailure: return SolveStatus::NumericalFailure;
+        case barrier::Status::InvalidProblem: return SolveStatus::InvalidModel;
     }
     return SolveStatus::NumericalFailure;
 }
@@ -482,6 +503,98 @@ SolveResult runDualSimplex(const model::Model& reduced, const SolverOptions& opt
     return result;
 }
 
+// The barrier method on an LP or convex QP.
+//
+// Convexity is re-checked here even though the dispatcher checks it for the
+// automatic QP route: a FORCED engine is decided before that check runs, and
+// the barrier's quasidefinite factorisation is only sound for a convex
+// objective. On a nonconvex Hessian the (1,1) block is not negative definite,
+// the inertia test fails, regularisation escalates, and what comes out is the
+// solution of a heavily regularised problem that is not the one posed.
+SolveResult runBarrier(const model::Model& reduced, const SolverOptions& options,
+                       SolveResult result) {
+    if (!reduced.objective.quadraticTerms.empty()) {
+        const qp::ConvexityCheck convexity = qp::checkConvexity(reduced);
+        if (!convexity.convexForObjectiveSense) {
+            result.status = SolveStatus::Unsupported;
+            result.message = "the barrier method requires a convex objective: " + convexity.reason;
+            return result;
+        }
+    }
+
+    barrier::BarrierProblem problem;
+    const barrier::Translation translation = barrier::toBarrierProblem(reduced, problem);
+    if (!translation.ok) {
+        result.status = SolveStatus::InvalidModel;
+        result.message = translation.error;
+        return result;
+    }
+
+    barrier::Options engineOptions;
+    engineOptions.primalTolerance = options.tolerance;
+    engineOptions.dualTolerance = options.tolerance;
+    engineOptions.gapTolerance = options.tolerance;
+    engineOptions.timeLimitSeconds = options.timeLimitSeconds;
+    result.executedEngine = Engine::Barrier;
+    // One budget covers the barrier AND crossover. Like every other engine
+    // path, it starts when the engine starts; model translation is not charged.
+    const auto engineStart = Clock::now();
+    const barrier::Result raw = barrier::BarrierSolver{}.solve(problem, engineOptions);
+    const barrier::ModelSolution solution = barrier::toModelSolution(reduced, translation, raw);
+
+    result.status = normalise(raw.status);
+    result.message = std::string("barrier: ") + raw.message;
+    result.iterations = raw.iterations;
+    // The iterate is handed on whatever the status; postsolve's primal
+    // validation, not this function, decides whether it counts as a solution.
+    if (raw.hasSolution) {
+        result.variableValues = solution.variableValues;
+        result.objectiveValue = solution.objectiveValue;
+    }
+    // Multipliers are published only at optimality: an interior iterate's y
+    // is not a shadow price until the gap has closed.
+    if (raw.status == barrier::Status::Optimal &&
+        solution.constraintDuals.size() == reduced.constraints.size()) {
+        result.constraintDuals = solution.constraintDuals;
+        result.hasDuals = true;
+    }
+
+    // Crossover to a vertex. See solver/crossover.h for why the interior point
+    // alone does not survive this pipeline's vertex-shaped postsolve. The
+    // interior solution above stays in place unless the vertex verifies.
+    //
+    // Crossover gets only what the barrier left of the caller's time limit.
+    // It used to receive the ORIGINAL budget a second time, so with
+    // --time-limit 60 a barrier solve could take 59 s and crossover another
+    // 60. An exhausted budget skips crossover outright rather than passing a
+    // remainder of zero on: in SolverOptions, timeLimitSeconds == 0 means NO
+    // limit, so a zero remainder would have turned into an unlimited one.
+    if (options.barrierCrossover && raw.status == barrier::Status::Optimal &&
+        reduced.objective.quadraticTerms.empty()) {
+        SolverOptions crossoverOptions = options;
+        bool budgetLeft = true;
+        if (options.timeLimitSeconds > 0.0) {
+            const double remaining = options.timeLimitSeconds - secondsSince(engineStart);
+            budgetLeft = remaining > 0.0;
+            crossoverOptions.timeLimitSeconds = remaining;
+        }
+        if (!budgetLeft) {
+            result.message += "; crossover skipped: the time limit was used up by the barrier solve";
+            return result;
+        }
+        const CrossoverResult vertex = crossoverToVertex(
+            reduced, result.variableValues, result.constraintDuals, result.objectiveValue, crossoverOptions);
+        if (vertex.applied) {
+            result.variableValues = vertex.primal;
+            result.constraintDuals = vertex.duals;
+            result.hasDuals = true;
+            result.objectiveValue = vertex.objective;
+        }
+        result.message += "; " + vertex.detail;
+    }
+    return result;
+}
+
 SolveResult runQp(const model::Model& reduced, const SolverOptions& options,
                   SolveResult result) {
     qp::QpModel problem;
@@ -663,6 +776,10 @@ SolveResult solveReduced(const model::Model& presolvedModel,
 
         case Engine::DualSimplex:
             result = runDualSimplex(presolvedModel, options, std::move(result));
+            break;
+
+        case Engine::Barrier:
+            result = runBarrier(presolvedModel, options, std::move(result));
             break;
 
         case Engine::Pdlp:

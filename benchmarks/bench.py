@@ -517,7 +517,7 @@ def main():
     parser.add_argument("--out", default=os.path.join(HERE, "results", "results.json"))
     parser.add_argument("--solvers", default="dual_simplex,pdlp,highs",
                         help="comma separated: auto, dual_simplex, pdlp, "
-                             "branch_and_cut, qp, highs, osqp")
+                             "barrier, branch_and_cut, qp, highs, osqp")
     parser.add_argument("--highs-backend", choices=["auto", "scipy"], default="auto",
                         help="auto prefers native HiGHS; scipy reproduces the frozen suite reference")
     parser.add_argument("--threads", type=int, default=1,
@@ -526,7 +526,7 @@ def main():
                         help="JSON file mapping instance basename to objective")
     args = parser.parse_args()
 
-    unknown = {s.strip() for s in args.solvers.split(",") if s.strip()} - {"auto", "dual_simplex", "pdlp", "branch_and_cut", "qp", "highs", "osqp"}
+    unknown = {s.strip() for s in args.solvers.split(",") if s.strip()} - {"auto", "dual_simplex", "pdlp", "barrier", "branch_and_cut", "qp", "highs", "osqp"}
     if unknown:
         parser.error(f"unknown solvers: {sorted(unknown)}")
 

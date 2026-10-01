@@ -160,7 +160,7 @@ The orchestrator classifies the original model once, runs presolve once, and pas
 | **Input Format** | MPS (Fixed & Free format) | LP format (`.lp`) |
 | **Model IR** | Linear, Quadratic terms ($q_{ij} x_i x_j$), Continuous/Integer/Binary types | Conic constraints (SOCP) |
 | **Presolve** | Fixed variables, Singleton equality/inequality, Bound tightening with provenance, Redundant rows | Variable substitution, Binary probing, Duplicate row/column detection |
-| **Engines** | PDLP (First-Order LP), Dual Simplex, Branch-and-Cut (MILP), ADMM (QP) | Infeasible interior-point barrier solver |
+| **Engines** | PDLP (First-Order LP), Dual Simplex, Barrier (primal-dual interior point, LP/QP, with crossover and active-set polishing), Branch-and-Cut (MILP), ADMM (QP) | Parallel/supernodal barrier factorisation; homogeneous self-dual embedding for infeasibility certificates |
 | **Postsolve** | Full primal reconstruction, Objective re-evaluation, Dual reconstruction (shadow prices & reduced costs), Bound provenance validation, Fail-closed error handling | Support for dual reconstruction through variable substitution passes |
 | **CLI & UX** | Interactive menu, Batch solve mode, Mascot banner, Solve dashboard, Solution export, TTY detection, CMake install | Real-time solve progression streaming |
 

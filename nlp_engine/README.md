@@ -43,9 +43,11 @@ sparse/dense Cholesky selection, and regularization. Its matrix convention is
 Its dual convention is `P*d + q + A'lambda = 0`. NLP uses that convention
 throughout, rather than the affine public API's shadow-price convention.
 
-There is no general sparse indefinite LDL factorization, inertia control or
-symmetric ordering interface. A primal-dual interior-point implementation would
-require substantial new linear algebra. SQP instead reuses the convex QP engine
+`barrier_engine` now provides a sparse LDL' with approximate-minimum-degree
+ordering, but only for regularised QUASIDEFINITE systems, with an inertia
+CHECK. A nonconvex NLP interior-point method needs more: inertia CORRECTION for
+an indefinite Lagrangian Hessian, which that factorisation does not do. SQP
+instead reuses the convex QP engine
 and its existing safeguards. The new module does not modify any engine source.
 The dual simplex's dense basis machinery is not suitable for general NLP KKT
 systems. PDLP's linear objectives cannot represent curvature subproblems.

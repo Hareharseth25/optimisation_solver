@@ -36,6 +36,7 @@ const char* toString(Engine value) noexcept {
     switch (value) {
         case Engine::Pdlp:         return "pdlp";
         case Engine::DualSimplex:  return "dual_simplex";
+        case Engine::Barrier:      return "barrier";
         case Engine::BranchAndCut: return "branch_and_cut";
         case Engine::Nlp:          return "nlp_sqp";
         case Engine::Qp:           return "qp";
@@ -53,6 +54,9 @@ std::optional<Engine> parseEngine(std::string_view name) noexcept {
     }
     if (name == "dual_simplex") {
         return Engine::DualSimplex;
+    }
+    if (name == "barrier" || name == "ipm" || name == "interior_point") {
+        return Engine::Barrier;
     }
     if (name == "branch_and_cut") {
         return Engine::BranchAndCut;

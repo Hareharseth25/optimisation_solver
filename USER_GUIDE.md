@@ -99,7 +99,7 @@ This presents the startup banner, mascot, and main menu:
        ╭─┴─────┴─╮      Mathematical Optimization Engine
        │  ◈   ◈  │
        │ min f(x)│      Problem Families:  LP · QP · MILP
-       │ ─────── │      Solver Engines:    PDLP · Dual Simplex · Branch & Cut · QP
+       │ ─────── │      Solver Engines:    PDLP · Dual Simplex · Barrier · Branch & Cut · QP
        ╰──┬───┬──╯
          ═╧═══╧═
 
@@ -165,7 +165,7 @@ The interactive session maintains a **Current Model** state across operations:
   - Displays detailed IR statistics: filename, detected problem family (LP, QP, MILP), variable counts broken down into continuous, integer, and binary, constraint count, matrix nonzeros, and objective specifications (sense and quadratic terms).
 - **Solver Settings:**
   - View and change session options:
-    - Change numerical engine: automatic dispatch or manual override (`pdlp`, `dual_simplex`, `branch_and_cut`, `qp`).
+    - Change numerical engine: automatic dispatch or manual override (`pdlp`, `dual_simplex`, `barrier`, `branch_and_cut`, `qp`).
     - Change maximum solve time limit in seconds (or 0 for unlimited).
     - Configure default output file destination.
 - **Help:**
@@ -187,7 +187,7 @@ optimsolver solve <model.mps> [options]
 
 | Option | Argument | Description |
 | :--- | :--- | :--- |
-| `--solver` | `<name>` | Force a specific numerical engine: `pdlp`, `dual_simplex`, `branch_and_cut`, `qp`. |
+| `--solver` | `<name>` | Force a specific numerical engine: `pdlp`, `dual_simplex`, `barrier` (aliases `ipm`, `interior_point`), `branch_and_cut`, `qp`. |
 | `--time-limit` | `<seconds>` | Set a maximum solve time budget in seconds (positive floating-point number). |
 | `--output` | `<file>` | Write the reconstructed original-space solution vector and duals to a file. |
 | `--backend` | `auto`\|`cpu`\|`cuda` | Compute backend for the PDLP and QP engines (default `auto`). `cuda` needs a CUDA-enabled build and a usable GPU and fails with the reason otherwise -- it never silently runs on the CPU. See [docs/cuda.md](docs/cuda.md). |
@@ -228,6 +228,11 @@ The dispatcher selects an appropriate engine based on the original model classif
    - **Algorithm:** Alternating Direction Method of Multipliers (ADMM).
    - **Best For:** Convex Quadratic Programs (QP) with linear constraints.
    - **Features:** Augmented KKT linear system factorizations and adaptive penalty updates ($\rho$).
+5. **Barrier (`barrier`):**
+   - **Algorithm:** Infeasible primal-dual interior-point method — Mehrotra predictor-corrector with Gondzio multiple centrality correctors.
+   - **Best For:** LPs and convex QPs where high accuracy matters, including degenerate LPs the dual simplex struggles with.
+   - **Features:** Sparse quasidefinite LDL' with approximate-minimum-degree ordering, inertia checking and iterative refinement. An LP crosses over to an exact vertex through the dual simplex; a QP is polished to its active set. Each is accepted only if it verifies, otherwise the interior solution is returned.
+   - **Not automatic:** select it with `--solver barrier`. It reports suspected infeasibility or unboundedness as `limit_reached`, never as a proof; use `dual_simplex` for a certificate.
 
 ---
 
