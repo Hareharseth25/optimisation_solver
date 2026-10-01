@@ -4,12 +4,16 @@
 #pragma GCC diagnostic ignored "-Wattributes"
 #endif
 
+#include "qp/admm_backend.h"
+#include "qp/compute_backend.h"
 #include "qp/parallel.h"
 #include "qp/qp_model.h"
 #include "qp/scaling.h"
 #include "qp/qp_types.h"
 
 #include <limits>
+#include <memory>
+#include <string>
 #include <vector>
 
 namespace qp {
@@ -25,8 +29,7 @@ struct AdmmOptions {
     std::int64_t iterationLimit = 5000;
     double timeLimitSeconds = 0.0;
 
-    // Convergence tolerances (applied to the scaled problem, so the
-    // scaled and original norms are equivalent).
+    // Convergence tolerances checked on the original problem.
     double primalTolerance = 1e-6;
     double dualTolerance = 1e-6;
 
@@ -89,6 +92,19 @@ struct AdmmOptions {
 
     bool usePolishing = true;
     int polishingIterations = 200;
+
+    // Where the per-iteration vector and sparse-product work runs; see
+    // ComputeBackend and docs/cuda.md. The algorithm and its options are the
+    // same on every backend.
+    ComputeBackend backend = ComputeBackend::Auto;
+    int cudaDevice = 0;
+
+    // Auto selects the hybrid CUDA backend only when nnz(A) + nnz(P) reaches
+    // this. The default means Auto never selects it: the KKT solve stays on the
+    // CPU and two n-vectors cross the bus every iteration, so the hybrid has to
+    // EARN its place with a measured crossover on real hardware before Auto
+    // may pick it (docs/cuda.md). backend = Cuda always runs it.
+    std::int64_t cudaNonzeroThreshold = std::numeric_limits<std::int64_t>::max();
 };
 
 // ============================================================================
@@ -153,6 +169,17 @@ struct AdmmResult {
     // problem, so this is the number to watch when tuning the rho policy.
     std::int64_t factorizations = 0;
     double bestObjective = std::numeric_limits<double>::quiet_NaN();
+
+    // Which backend ran the iteration and why; see PdlpResult for the same idea.
+    ComputeBackend executedBackend = ComputeBackend::Cpu;
+    std::string backendMessage;
+    BackendProfile backendProfile;
+
+    // Host time in the KKT factorisation (all refactorisations) and in the
+    // per-iteration triangular solves. Measured on every backend: on the
+    // hybrid CUDA backend this is the CPU share of each iteration.
+    double kktFactorSeconds = 0.0;
+    double kktSolveSeconds = 0.0;
 };
 
 // ============================================================================
@@ -184,24 +211,23 @@ public:
     [[nodiscard]] const QpModel& problem() const { return scaled_; }
 
 private:
-    // One ADMM iteration. Returns false if the KKT solve failed, in which case
-    // the iterate is unchanged and the caller must stop: continuing would
-    // repeat the same failed solve with x frozen, which is how a lost factor
-    // used to masquerade as an iteration limit.
+    // The iteration loop proper, run by solve() once validation has passed.
+    AdmmResult iterate();
+
+    // Return false if the KKT factorisation cannot solve the step.
     [[nodiscard]] bool step(KktSolver& kkt);
 
-    // Map the best iterate (x_, y_) back to the original coordinates.
+    // Map the backend iterate back to the original coordinates.
     void toOriginal();
 
     const QpModel& original_;
     QpModel scaled_;
     AdmmOptions options_;
 
-    // State.
-    std::vector<double> x_;       // primal iterate
-    std::vector<double> z_;       // auxiliary constraint iterate
-    std::vector<double> y_;       // dual (Lagrange multiplier)
-    std::vector<double> Ax_;      // A * x
+    // State: x, z, y, A*x and their saved copies live in the backend, on
+    // whichever device runs the iteration.
+    std::unique_ptr<AdmmBackend> backend_;
+    std::string backendMessage_;
 
     double rho_ = 1.0;
 

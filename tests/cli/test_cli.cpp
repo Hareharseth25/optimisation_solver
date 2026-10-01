@@ -1,8 +1,10 @@
 #include "cli.h"
+#include "json_report.h"
 #include "argument_parser.h"
 #include "mps/mps_reader.h"
 #include "presolve/presolver.h"
 #include "postsolve/postsolver.h"
+#include "pdlp/compute_backend.h"
 #include "solver/orchestrator.h"
 
 #include <cassert>
@@ -478,23 +480,29 @@ void test_binary_execution() {
 #ifdef OPTIMSOLVER_BIN_PATH
     std::string binPath = OPTIMSOLVER_BIN_PATH;
     std::string mpsPath = getTestModelPath("tests/cli/simple_lp.mps");
+    // std::system runs cmd.exe on Windows, which has no /dev/null.
+#ifdef _WIN32
+    const std::string nullDev = "NUL";
+#else
+    const std::string nullDev = "/dev/null";
+#endif
     // 1. Test help on real binary
-    std::string cmdHelp = binPath + " --help > /dev/null 2>&1";
+    std::string cmdHelp = binPath + " --help > " + nullDev + " 2>&1";
     int ret = std::system(cmdHelp.c_str());
     assert(ret == 0);
 
     // 2. Test root binary without args
-    std::string cmdRoot = binPath + " < /dev/null > /dev/null 2>&1";
+    std::string cmdRoot = binPath + " < " + nullDev + " > " + nullDev + " 2>&1";
     ret = std::system(cmdRoot.c_str());
     assert(ret == 0);
 
     // 3. Test solve command on real binary
-    std::string cmdSolve = binPath + " solve " + mpsPath + " > /dev/null 2>&1";
+    std::string cmdSolve = binPath + " solve " + mpsPath + " > " + nullDev + " 2>&1";
     ret = std::system(cmdSolve.c_str());
     assert(ret == 0);
 
     // 4. Test invalid arg on real binary
-    std::string cmdInvalid = binPath + " solve " + mpsPath + " --solver bogus > /dev/null 2>&1";
+    std::string cmdInvalid = binPath + " solve " + mpsPath + " --solver bogus > " + nullDev + " 2>&1";
     ret = std::system(cmdInvalid.c_str());
     assert(ret != 0);
 
@@ -584,6 +592,86 @@ void test_interactive_invalid_option() {
     std::cout << "[PASSED] test_interactive_invalid_option\n";
 }
 
+// Compute-backend flags. These use `expect` rather than assert so that they
+// also check something in Release builds, where NDEBUG removes assert.
+void expect(bool condition, const std::string& what) {
+    if (!condition) {
+        std::cerr << "[FAILED] " << what << "\n";
+        std::exit(1);
+    }
+}
+
+void test_backend_option_parsing() {
+    const char* argv[] = {"optimsolver", "solve", "m.mps", "--backend", "cuda", "--cuda-device", "1"};
+    auto res = cli::ArgumentParser::parse(7, argv);
+    expect(res.success, "--backend cuda --cuda-device 1 parses");
+    expect(res.solveOptions.backend.has_value() && *res.solveOptions.backend == "cuda", "backend value");
+    expect(res.solveOptions.cudaDevice.has_value() && *res.solveOptions.cudaDevice == 1, "device value");
+
+    std::string out, err;
+    int code = runCli({"optimsolver", "solve", "m.mps", "--backend", "gpu"}, out, err);
+    expect(code != 0 && err.find("Invalid backend 'gpu'") != std::string::npos, "unknown backend rejected");
+    code = runCli({"optimsolver", "solve", "m.mps", "--backend"}, out, err);
+    expect(code != 0 && err.find("--backend") != std::string::npos, "missing backend value rejected");
+    code = runCli({"optimsolver", "solve", "m.mps", "--cuda-device", "-2"}, out, err);
+    expect(code != 0 && err.find("Invalid CUDA device") != std::string::npos, "negative device rejected");
+    code = runCli({"optimsolver", "solve", "--help"}, out, err);
+    expect(code == 0 && out.find("--backend") != std::string::npos, "--help documents --backend");
+
+    std::cout << "[PASSED] test_backend_option_parsing\n";
+}
+
+void test_backend_selection_reported() {
+    const std::string mpsPath = getTestModelPath("tests/cli/simple_lp.mps");
+    std::string out, err;
+
+    // Default output is unchanged: no backend line unless one was requested.
+    int code = runCli({"optimsolver", "solve", mpsPath, "--solver", "pdlp"}, out, err);
+    expect(code == 0 && out.find("Compute backend") == std::string::npos,
+           "default output carries no backend line");
+
+    code = runCli({"optimsolver", "solve", mpsPath, "--solver", "pdlp", "--backend", "cpu"}, out, err);
+    expect(code == 0 && out.find("Compute backend: cpu") != std::string::npos,
+           "--backend cpu is reported");
+
+    // Explicit CUDA without a usable device: refused, with the reason -- never
+    // a silent CPU solve.
+    if (!pdlp::cudaAvailability(0).usable) {
+        code = runCli({"optimsolver", "solve", mpsPath, "--solver", "pdlp", "--backend", "cuda"}, out, err);
+        expect(code != 0, "--backend cuda without a device fails");
+        expect(err.find("CUDA backend requested but unavailable") != std::string::npos,
+               "the refusal names the CUDA request");
+    }
+
+    std::cout << "[PASSED] test_backend_selection_reported\n";
+}
+
+void test_backend_report_serialization() {
+    cli::JsonReportInput input;
+    input.requestedBackend = "cuda";
+    input.cudaDevice = 3;
+    solver::SolveResult result;
+    result.executedEngine = solver::Engine::Qp;
+    result.executedBackend = solver::ComputeBackend::Cuda;
+    result.status = solver::SolveStatus::Optimal;
+    result.backendReason = "cuda device 3";
+    std::ostringstream report;
+    expect(cli::writeJsonReport(report, input, result), "GPU report writes");
+    expect(report.str().find("\"executed\": \"cuda\"") != std::string::npos, "reports actual GPU backend");
+    expect(report.str().find("\"executed_device\": 3") != std::string::npos, "reports selected GPU device");
+
+    // A setup failure can have an engine selected/invoked but no backend run.
+    result.status = solver::SolveStatus::InvalidModel;
+    result.executedBackend = solver::ComputeBackend::Cpu;
+    result.backendReason.clear();
+    result.message = "CUDA setup refused";
+    std::ostringstream refused;
+    expect(cli::writeJsonReport(refused, input, result), "refusal report writes");
+    expect(refused.str().find("\"executed\": null") != std::string::npos, "setup refusal is not CPU execution");
+    expect(refused.str().find("\"executed_device\": null") != std::string::npos, "setup refusal has no GPU device");
+    expect(refused.str().find("CUDA setup refused") != std::string::npos, "setup reason is retained");
+}
+
 }  // namespace
 
 int main() {
@@ -616,6 +704,9 @@ int main() {
     test_interactive_open_model_failed();
     test_interactive_open_and_current_model_context();
     test_interactive_invalid_option();
+    test_backend_report_serialization();
+    test_backend_option_parsing();
+    test_backend_selection_reported();
 
     std::cout << "All CLI tests passed successfully!\n";
     return 0;

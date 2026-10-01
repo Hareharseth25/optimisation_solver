@@ -40,6 +40,7 @@ endfunction()
 
 enable_testing()
 
+option(OPTIMSOLVER_REQUIRE_CUDA_TEST_DEVICE "Fail CUDA validation if no usable GPU is present" OFF)
 add_executable(test_batch2
     tests/presolve/test_batch2.cpp
     src/model/model.cpp
@@ -144,6 +145,16 @@ target_include_directories(test_presolve_metadata PRIVATE
 target_link_libraries(test_presolve_metadata PRIVATE postsolver)
 add_test(NAME test_presolve_metadata COMMAND test_presolve_metadata)
 
+# Optional CUDA backends for the PDLP and QP engines (see docs/cuda.md). OFF by
+# default: a normal configure needs no CUDA toolkit, driver or GPU, and compiles
+# no CUDA source. When ON, the language is enabled here, above the engines,
+# because their device code reaches every target that links them.
+option(OPTIMSOLVER_ENABLE_CUDA "Build the CUDA backends of the PDLP and QP engines" OFF)
+if(OPTIMSOLVER_ENABLE_CUDA)
+    include(${PROJECT_SOURCE_DIR}/cmake/OptimsolverCuda.cmake)
+    optimsolver_enable_cuda()
+endif()
+
 # Engine unit tests are part of the root test suite by default.
 option(PDLP_BUILD_TESTS "Build the PDLP test suite" ON)
 option(QP_BUILD_TESTS "Build the QP test suite" ON)
@@ -153,6 +164,9 @@ add_subdirectory(pdlp_engine)
 # own tests, so `ctest` from the root covers all three engines.
 add_subdirectory(milp_engine)
 add_subdirectory(qp_engine)
+if(OPTIMSOLVER_REQUIRE_CUDA_TEST_DEVICE AND NOT (PDLP_ENABLE_CUDA OR QP_ENABLE_CUDA))
+    message(FATAL_ERROR "Strict CUDA validation requires a CUDA backend to be enabled")
+endif()
 add_subdirectory(miqp_engine)
 add_subdirectory(nlp_engine)
 
@@ -269,6 +283,13 @@ endforeach()
 add_executable(test_qp_convention tests/qp/test_qp_convention.cpp)
 target_link_libraries(test_qp_convention PRIVATE solver_orchestrator)
 add_test(NAME test_qp_convention COMMAND test_qp_convention)
+
+# Backend selection through the public pipeline: the request reaches the
+# engine, the engine records what ran, and an explicit CUDA request is never
+# answered by a silent CPU solve.
+add_executable(test_compute_backend tests/solver/test_compute_backend.cpp)
+target_link_libraries(test_compute_backend PRIVATE solver_orchestrator)
+add_test(NAME test_compute_backend COMMAND test_compute_backend)
 
 # Ground truth by exhaustive enumeration: every small binary MILP is solved
 # by brute force over all 2^n subsets and compared against the pipeline. No
@@ -402,6 +423,11 @@ add_executable(test_nlp_integration tests/pipeline/test_nlp_integration.cpp)
 target_link_libraries(test_nlp_integration PRIVATE solver_orchestrator)
 add_test(NAME nlp_pipeline COMMAND test_nlp_integration)
 
+if(Python3_Interpreter_FOUND)
+    add_test(NAME backend_json_provenance COMMAND ${Python3_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/tests/cli/test_backend_json.py $<TARGET_FILE:optimsolver>)
+    set_tests_properties(backend_json_provenance PROPERTIES TIMEOUT 180)
+endif()
 # Offline benchmark infrastructure tests have no downloaded-data dependency.
 option(QP_REFERENCE_TESTS "Run independent OSQP comparisons (requires numpy/scipy/osqp)" OFF)
 if(QP_REFERENCE_TESTS AND NOT Python3_Interpreter_FOUND)

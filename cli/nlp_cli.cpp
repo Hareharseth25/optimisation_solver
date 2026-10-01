@@ -50,6 +50,8 @@ int runNlp(const SolveOptions& options, std::ostream& out, std::ostream& err,
         // A cached interactive model can differ from the current disk file.
         if (parsed) metadata.instanceSha256 = sha256File(options.modelPath);
         metadata.requestedEngine = options.solver.value_or("");
+        metadata.requestedBackend = options.backend.value_or("auto");
+        metadata.cudaDevice = options.cudaDevice.value_or(0);
         metadata.tolerance = numerical.tolerance;
         metadata.timeLimitSeconds = numerical.timeLimitSeconds;
         metadata.originalVariables = loaded->model.variableBounds().size();
@@ -57,6 +59,11 @@ int runNlp(const SolveOptions& options, std::ostream& out, std::ostream& err,
         metadata.parseSeconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
         const auto result = solver::solve(loaded->model, loaded->initial, numerical, requested);
         if (stored) *stored = result;
+        // NLP has no CUDA backend; acknowledge a CUDA request on stderr, as the
+        // orchestrator does for its CPU-only engines (stdout is the JSON report).
+        if (options.backend && solver::parseComputeBackend(*options.backend) == solver::ComputeBackend::Cuda)
+            err << "Compute backend: cpu (" << solver::toString(solver::Engine::Nlp)
+                << " has no CUDA backend; ran on the CPU)\n";
         if (!writeJsonReport(out, metadata, result)) throw std::runtime_error("cannot write NLP report");
         if (options.jsonPath) {
             std::ofstream file(*options.jsonPath);

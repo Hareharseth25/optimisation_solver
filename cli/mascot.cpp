@@ -1,23 +1,40 @@
 #include "mascot.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <iomanip>
 #include <sstream>
-#include <unistd.h>
+#include <thread>
 #include <vector>
+
+#ifdef _MSC_VER
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace cli {
 
 namespace {
 
 bool isTty(const std::ostream& stream) {
+#ifdef _MSC_VER
+    if (&stream == &std::cout) {
+        return _isatty(_fileno(stdout)) != 0;
+    }
+    if (&stream == &std::cerr) {
+        return _isatty(_fileno(stderr)) != 0;
+    }
+#else
     if (&stream == &std::cout) {
         return isatty(STDOUT_FILENO) != 0;
     }
     if (&stream == &std::cerr) {
         return isatty(STDERR_FILENO) != 0;
     }
+#endif
     return false;
 }
 
@@ -203,6 +220,8 @@ void printSolveHelp(std::ostream& out) {
     out << "                          pdlp, dual_simplex, branch_and_cut, qp, nlp\n";
     out << "  --time-limit <seconds>  Maximum solve time budget in seconds (positive number)\n";
     out << "  --output <file>         Write reconstructed original-space solution to file\n";
+    out << "  --backend <name>        Compute backend for PDLP/QP: auto (default), cpu, cuda\n";
+    out << "  --cuda-device <index>   CUDA device to use with --backend cuda/auto (default 0)\n";
     out << "  -h, --help              Show this help message\n\n";
     out << s.bold() << "Examples" << s.reset() << "\n";
     out << "  optimsolver solve model.mps\n";
@@ -210,6 +229,7 @@ void printSolveHelp(std::ostream& out) {
     out << "  NLP success means first-order stationarity, not global optimality.\n";
     out << "  optimsolver solve model.mps --solver dual_simplex\n";
     out << "  optimsolver solve model.mps --time-limit 60 --output solution.txt\n";
+    out << "  optimsolver solve model.mps --solver pdlp --backend cuda\n";
 }
 
 void printHeaderBox(std::ostream& out, const std::string& title, const TerminalStyle& s, int width) {
@@ -269,7 +289,7 @@ void animateSolveProgress(std::ostream& out, const TerminalStyle& s, const std::
     for (int i = 0; i < 4; ++i) {
         out << "\r  " << s.boldCyan() << frames[i] << " " << s.reset()
             << s.dim() << stage << s.reset() << std::flush;
-        usleep(30000);
+        std::this_thread::sleep_for(std::chrono::microseconds(30000));
     }
     out << "\r\033[K" << std::flush;
 }

@@ -21,6 +21,16 @@ option(PDLP_ENABLE_LTO  "Enable link-time optimisation for Release builds" ON)
 # gets portable output unless it explicitly asks otherwise.
 option(PDLP_NATIVE_ARCH "Tune for the building machine's CPU" ${PDLP_STANDALONE})
 
+# Optional CUDA backend for the PDHG iteration. OFF by default: without it no
+# CUDA toolkit, driver or GPU is needed to configure, build, test or run. The
+# parent project's OPTIMSOLVER_ENABLE_CUDA, when set, supplies the default.
+if(DEFINED OPTIMSOLVER_ENABLE_CUDA)
+    set(PDLP_CUDA_DEFAULT ${OPTIMSOLVER_ENABLE_CUDA})
+else()
+    set(PDLP_CUDA_DEFAULT OFF)
+endif()
+option(PDLP_ENABLE_CUDA "Build the CUDA backend for the PDHG iteration" ${PDLP_CUDA_DEFAULT})
+
 # Only meaningful standalone: setting this in a subdirectory would overwrite the
 # parent project's cached build type.
 if(PDLP_STANDALONE AND NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -39,6 +49,7 @@ add_library(pdlp_engine
     src/restart_controller.cpp
     src/termination.cpp
     src/pdhg_kernel.cpp
+    src/iteration_backend.cpp
     src/feasibility_polishing.cpp
     src/pdlp_solver.cpp
 )
@@ -53,9 +64,38 @@ target_link_libraries(pdlp_engine PUBLIC Threads::Threads)
 
 include(CheckCXXCompilerFlag)
 
+if(PDLP_ENABLE_CUDA)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/OptimsolverCuda.cmake)
+    optimsolver_enable_cuda()
+
+    # The device code is its own target so that nvcc never sees the engine's
+    # host-compiler flags (-march=native, -Wpedantic, LTO), and those flags never
+    # see nvcc. Nothing CUDA-specific reaches consumers of pdlp_engine except
+    # the runtime library it links.
+    add_library(pdlp_cuda STATIC
+        src/cuda/cuda_iteration_backend.cu
+    )
+    target_include_directories(pdlp_cuda PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../cuda_support/include
+    )
+    optimsolver_configure_cuda_target(pdlp_cuda)
+    target_link_libraries(pdlp_cuda PUBLIC CUDA::cudart_static)
+    target_link_libraries(pdlp_engine PRIVATE pdlp_cuda)
+else()
+    target_sources(pdlp_engine PRIVATE src/cuda/cuda_unavailable.cpp)
+endif()
+
 if(MSVC)
     target_compile_options(pdlp_engine PRIVATE /W4 /permissive- /fp:precise)
     target_compile_options(pdlp_engine PRIVATE $<$<CONFIG:Release>:/O2>)
+    # /fp:precise never contracts a*b+c into an FMA, so the device must not
+    # either: nvcc's default -fmad=true rounds once where the CPU rounds twice,
+    # and on a diverging (infeasible) PDHG path that difference is amplified
+    # until the two backends take different restart/certificate decisions.
+    if(PDLP_ENABLE_CUDA)
+        target_compile_options(pdlp_cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fmad=false>)
+    endif()
 else()
     target_compile_options(pdlp_engine PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(pdlp_engine PRIVATE $<$<CONFIG:Release>:-O3>)
@@ -117,4 +157,23 @@ if(PDLP_BUILD_TESTS)
     add_executable(pdlp_tests tests/test_pdlp.cpp)
     target_link_libraries(pdlp_tests PRIVATE pdlp_engine)
     add_test(NAME pdlp_tests COMMAND pdlp_tests)
+
+endif()
+
+# CUDA validation must not disappear when the ordinary engine tests are off.
+option(OPTIMSOLVER_REQUIRE_CUDA_TEST_DEVICE "Fail CUDA tests instead of skipping when no GPU is usable" OFF)
+if(PDLP_STANDALONE AND OPTIMSOLVER_REQUIRE_CUDA_TEST_DEVICE AND NOT PDLP_ENABLE_CUDA)
+    message(FATAL_ERROR "Strict CUDA validation requires a CUDA backend to be enabled")
+endif()
+if(PDLP_ENABLE_CUDA)
+    if(PDLP_STANDALONE)
+        enable_testing()
+    endif()
+    add_executable(pdlp_cuda_tests tests/test_pdlp_cuda.cpp)
+    target_link_libraries(pdlp_cuda_tests PRIVATE pdlp_engine)
+    add_test(NAME pdlp_cuda_tests COMMAND pdlp_cuda_tests)
+    set_tests_properties(pdlp_cuda_tests PROPERTIES SKIP_RETURN_CODE 77 LABELS "cuda" TIMEOUT 300)
+    if(OPTIMSOLVER_REQUIRE_CUDA_TEST_DEVICE)
+        set_tests_properties(pdlp_cuda_tests PROPERTIES ENVIRONMENT "OPTIMSOLVER_REQUIRE_CUDA_TEST_DEVICE=1")
+    endif()
 endif()

@@ -179,6 +179,17 @@ int solveModel(const model::Model& model,
     resInfo.message = solveResult.message;
     printSolveResult(out, resInfo, style);
 
+    // Only when a backend was asked for or a GPU actually ran, so the default
+    // output is unchanged.
+    if (solverOptions.backend != solver::ComputeBackend::Auto ||
+        solveResult.executedBackend == solver::ComputeBackend::Cuda) {
+        out << "  Compute backend: " << solver::toString(solveResult.executedBackend);
+        if (!solveResult.backendReason.empty()) {
+            out << " (" << solveResult.backendReason << ")";
+        }
+        out << "\n";
+    }
+
     if (!solveResult.hasPrimal) {
         if (solveResult.status == solver::SolveStatus::LimitReached) {
             out << "  No feasible solution available.\n";
@@ -217,6 +228,8 @@ int solveFile(const std::string& modelPath,
               const std::optional<std::string>& solverName,
               const std::optional<double>& timeLimitSeconds,
               const std::optional<std::string>& outputPath,
+              const std::optional<std::string>& backendName,
+              const std::optional<int>& cudaDevice,
               std::ostream& out,
               std::ostream& err,
               const TerminalStyle& style,
@@ -269,10 +282,20 @@ int solveFile(const std::string& modelPath,
     if (threadCount.has_value()) {
         solverOptions.threadCount = *threadCount;
     }
+    if (backendName.has_value()) {
+        solverOptions.backend =
+            solver::parseComputeBackend(*backendName).value_or(solver::ComputeBackend::Auto);
+    }
+    if (cudaDevice.has_value()) {
+        solverOptions.cudaDevice = *cudaDevice;
+    }
+
 
     JsonReportInput report;
     report.instancePath = modelPath;
     report.requestedEngine = solverName.value_or(std::string{});
+    report.requestedBackend = backendName.value_or("auto");
+    report.cudaDevice = cudaDevice.value_or(0);
     report.timeLimitSeconds = timeLimitSeconds.value_or(0.0);
     report.threadCount = threadCount.value_or(0);
     report.tolerance = solverOptions.tolerance;
@@ -504,7 +527,8 @@ void displayHelpScreen(std::ostream& out, std::istream& in, const TerminalStyle&
 
     out << "  " << s.bold() << "Other options:" << s.reset() << "\n";
     out << "      --time-limit <seconds>\n";
-    out << "      --output <file>\n\n";
+    out << "      --output <file>\n";
+    out << "      --backend auto|cpu|cuda   (--cuda-device <index>)\n\n";
 
     out << "  " << s.bold() << "Documentation:" << s.reset() << "\n";
     out << "      USER_GUIDE.md        Complete usage guide & MPS specification\n";
@@ -896,6 +920,7 @@ int run(int argc, char* argv[], std::ostream& out, std::ostream& err, std::istre
         TerminalStyle style = TerminalStyle::forStream(out);
         const auto& opts = parseResult.solveOptions;
         return solveFile(opts.modelPath, opts.solver, opts.timeLimitSeconds, opts.outputPath,
+                         opts.backend, opts.cudaDevice,
                          out, err, style, opts.jsonPath, opts.dumpModelPath, opts.threadCount);
     }
 
