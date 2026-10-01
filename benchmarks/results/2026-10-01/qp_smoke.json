@@ -1,0 +1,4919 @@
+{
+ "tolerances": {
+  "feasibility_absolute": 1e-06,
+  "feasibility_relative": 1e-08,
+  "integrality_absolute": 1e-06,
+  "optimality_normalised": 1e-06,
+  "frozen": true
+ },
+ "results": [
+  {
+   "instance": "benchmarks/instances/qp/mps/hs21.mps",
+   "instance_name": "hs21.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 2,
+    "constraints": 1,
+    "nonzeros": 2,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1785856,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 6.0083e-05,
+      "presolve": null,
+      "solve": 0.000176958,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.00539129200114985,
+     "termination": {
+      "status": "optimal",
+      "message": "converged",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": -99.959999999984,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.000175167
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 7.795616304876909e-33,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -99.959999999984,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 7.795616304876909e-33,
+       "max_complementarity_abs": 1.6000001327045937e-11,
+       "dual_objective": -99.96,
+       "gap_abs": 1.5987211554602254e-11,
+       "gap_normalised": 7.957003560921525e-14
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS21                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      2 variables \u00b7 1 constraint               \u2502\n\u2502  Reduced    2 variables \u00b7 1 constraint               \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       -99.96\n  Iterations      100\n  Solve time      0.0002 s\n  Duals available: 1 shadow prices, 2 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1736704,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 5.6209e-05,
+      "presolve": null,
+      "solve": 9.2834e-05,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.004996792000383721,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (1 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": -99.96,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 9,
+      "nodes": null,
+      "solve_seconds": 9.1208e-05
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.776467409758247e-205,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -99.96,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 1.776467409758247e-205,
+       "max_complementarity_abs": 1.776467409758247e-175,
+       "dual_objective": -99.96000000000001,
+       "gap_abs": 1.4210854715202004e-14,
+       "gap_normalised": 7.072892054151903e-17
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS21                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      2 variables \u00b7 1 constraint               \u2502\n\u2502  Reduced    2 variables \u00b7 1 constraint               \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       -99.96\n  Iterations      9\n  Solve time      0.0001 s\n  Duals available: 1 shadow prices, 2 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.319,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49905664,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.3221403330007888,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": -99.96,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 8.625000000000001e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -99.96,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 4.440892098500626e-16,
+       "max_bound_violation_scaled": 8.881784197001253e-18,
+       "worst_variable": "C------1",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.0408340855860843e-16,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 0.0,
+       "dual_objective": -99.96000000000001,
+       "gap_abs": 1.4210854715202004e-14,
+       "gap_normalised": 7.072892054151903e-17
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs35.mps",
+   "instance_name": "hs35.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 3,
+    "constraints": 1,
+    "nonzeros": 3,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1785856,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 6.4042e-05,
+      "presolve": null,
+      "solve": 0.000105416,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005298416999721667,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 0.11111111110116209,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 0.000103083
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.7627976856005034e-10,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.11111111110116204,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.477085369103406e-11,
+       "max_row_violation_scaled": 1.492361789678864e-11,
+       "worst_row": "R------1",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 1.7627976856005034e-10,
+       "max_complementarity_abs": 1.7627976856005034e+20,
+       "dual_objective": 0.11111111105087268,
+       "gap_abs": 5.028935601281148e-11,
+       "gap_normalised": 4.1145836740117696e-11
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "2 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS35                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      3 variables \u00b7 1 constraint               \u2502\n\u2502  Reduced    3 variables \u00b7 1 constraint               \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       0.111111111\n  Iterations      50\n  Solve time      0.0001 s\n  Duals available: 1 shadow prices, 3 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1736704,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 5.9417e-05,
+      "presolve": null,
+      "solve": 0.000102417,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.0051285419995110715,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (1 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 0.11111111111111092,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 6,
+      "nodes": null,
+      "solve_seconds": 0.000100417
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.996003610813204e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.11111111111111094,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 4.996003610813204e-16,
+       "max_complementarity_abs": 6.66133814775094e-16,
+       "dual_objective": 0.11111111111111072,
+       "gap_abs": 2.220446049250313e-16,
+       "gap_normalised": 1.816728585750257e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS35                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      3 variables \u00b7 1 constraint               \u2502\n\u2502  Reduced    3 variables \u00b7 1 constraint               \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       0.111111111\n  Iterations      6\n  Solve time      0.0001 s\n  Duals available: 1 shadow prices, 3 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.225,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 50135040,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.22908454199932748,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 0.11111111111111088,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 4.4624000000000005e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.11111111111111088,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.7763568394002505e-15,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 0.0,
+       "dual_objective": 0.11111111111111427,
+       "gap_abs": 3.3861802251067274e-15,
+       "gap_normalised": 2.7705110932691338e-15
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs35mod.mps",
+   "instance_name": "hs35mod.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 3,
+    "constraints": 1,
+    "nonzeros": 3,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1785856,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 6.6667e-05,
+      "presolve": null,
+      "solve": 0.000138959,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005412915999841061,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 0.24999999999999978,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.000136333
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 6.537803812522103e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.24999999999999972,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 6.537803812522103e-16,
+       "max_complementarity_abs": 653780381252210.2,
+       "dual_objective": 0.2500000000000018,
+       "gap_abs": 2.0539125955565396e-15,
+       "gap_normalised": 1.3692750637043582e-15
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "2 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS35MOD                                     \u2502\n\u2502                                                      \u2502\n\u2502  Model      3 variables \u00b7 1 constraint               \u2502\n\u2502  Reduced    2 variables \u00b7 1 constraint               \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       0.25\n  Iterations      100\n  Solve time      0.0001 s\n  Duals available: 1 shadow prices, 3 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1736704,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 6.1333e-05,
+      "presolve": null,
+      "solve": 0.000107458,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.0049252909993811045,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (0 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 0.24999999999999972,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 10,
+      "nodes": null,
+      "solve_seconds": 0.000105083
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.1102230246251565e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.24999999999999972,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 1.1102230246251565e-16,
+       "max_complementarity_abs": 111022302462515.66,
+       "dual_objective": 0.25,
+       "gap_abs": 2.7755575615628914e-16,
+       "gap_normalised": 1.8503717077085946e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "2 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS35MOD                                     \u2502\n\u2502                                                      \u2502\n\u2502  Model      3 variables \u00b7 1 constraint               \u2502\n\u2502  Reduced    2 variables \u00b7 1 constraint               \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       0.25\n  Iterations      10\n  Solve time      0.0001 s\n  Duals available: 1 shadow prices, 3 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.209,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 48791552,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.21273345800000243,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 0.25,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 3.9374e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.25,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 2.220446049250313e-16,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 0.0,
+       "dual_objective": 0.25,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs51.mps",
+   "instance_name": "hs51.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 5,
+    "constraints": 3,
+    "nonzeros": 7,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1818624,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 7.5792e-05,
+      "presolve": null,
+      "solve": 0.00016675,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005351416999474168,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 8.881784197001254e-16,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.000164625
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.0720558370215745e-15,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.0,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.440892098500626e-16,
+       "max_row_violation_scaled": 1.1102230246251565e-16,
+       "worst_row": "R------1",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 4.0720558370215745e-15,
+       "max_complementarity_abs": 4072055837021574.5,
+       "dual_objective": 3.552713678800501e-15,
+       "gap_abs": 3.552713678800501e-15,
+       "gap_normalised": 3.5527136788004883e-15
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "5 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS51                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      5 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    5 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       8.8817842e-16\n  Iterations      100\n  Solve time      0.0002 s\n  Duals available: 3 shadow prices, 5 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1736704,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 7.3375e-05,
+      "presolve": null,
+      "solve": 8.6375e-05,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.004922166999676847,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 4.440892098500626e-16,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 2,
+      "nodes": null,
+      "solve_seconds": 8.4458e-05
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.7427590393193922e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -4.440892098500626e-16,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 3.3306690738754696e-16,
+       "max_row_violation_scaled": 1.6653345369377348e-16,
+       "worst_row": "R------3",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 1.7427590393193922e-16,
+       "max_complementarity_abs": 174275903931939.22,
+       "dual_objective": -1.7763568394002505e-15,
+       "gap_abs": 1.3322676295501878e-15,
+       "gap_normalised": 1.3322676295501849e-15
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "5 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS51                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      5 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    5 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       4.4408921e-16\n  Iterations      2\n  Solve time      0.0001 s\n  Duals available: 3 shadow prices, 5 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.214,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49725440,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.2175939169992489,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 8.881784197001252e-16,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 5.0249e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 8.881784197001252e-16,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.220446049250313e-16,
+       "max_row_violation_scaled": 1.1102230246251568e-16,
+       "worst_row": "R------2",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.4232294070243807e-15,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 2.6671660482410196e-31,
+       "dual_objective": 8.881784197001252e-16,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs52.mps",
+   "instance_name": "hs52.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 5,
+    "constraints": 3,
+    "nonzeros": 7,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1818624,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 7.5083e-05,
+      "presolve": null,
+      "solve": 0.000164375,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005304667000018526,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 5.326647564469914,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.000162375
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 8.881784197001252e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 5.326647564469914,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 5.551115123125783e-17,
+       "max_row_violation_scaled": 5.551115123125783e-17,
+       "worst_row": "R------1",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 8.881784197001252e-16,
+       "max_sign_violation_abs": 8.881784197001252e-16,
+       "max_complementarity_abs": 888178419700125.2,
+       "dual_objective": 5.326647564469914,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "5 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS52                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      5 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    5 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       5.32664756\n  Iterations      100\n  Solve time      0.0002 s\n  Duals available: 3 shadow prices, 5 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1736704,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 7.4625e-05,
+      "presolve": null,
+      "solve": 8.5959e-05,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005025374999604537,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 5.326647564469855,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 2,
+      "nodes": null,
+      "solve_seconds": 8.4083e-05
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.3322676295501878e-15,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 5.326647564469855,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 5.863365348801608e-15,
+       "max_row_violation_scaled": 5.863365348801608e-15,
+       "worst_row": "R------3",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 1.3322676295501878e-15,
+       "max_complementarity_abs": 1332267629550188.0,
+       "dual_objective": 5.326647564469914,
+       "gap_abs": 5.861977570020827e-14,
+       "gap_normalised": 5.030317609877745e-15
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "3 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS52                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      5 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    5 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       5.32664756\n  Iterations      2\n  Solve time      0.0001 s\n  Duals available: 3 shadow prices, 5 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.242,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 50151424,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.2452684589989076,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 5.326647564469914,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 4.9415e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 5.326647564469914,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.163336342344337e-17,
+       "max_row_violation_scaled": 4.0361232874393704e-17,
+       "worst_row": "R------2",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 2.6645352591003757e-15,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 1.0752303218432751e-16,
+       "dual_objective": 5.326647564469914,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs53.mps",
+   "instance_name": "hs53.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 5,
+    "constraints": 3,
+    "nonzeros": 7,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1818624,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 8.7625e-05,
+      "presolve": null,
+      "solve": 0.000174417,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005865041999641107,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 4.093023255800862,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.000171958
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.1950440637065185e-12,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 4.093023255800862,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 1.6365797605999433e-12,
+       "max_row_violation_scaled": 1.2820511113615753e-12,
+       "worst_row": "R------1",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 8.881784197001252e-16,
+       "max_sign_violation_abs": 1.1950440637065185e-12,
+       "max_complementarity_abs": 1.2700817142185426e-11,
+       "dual_objective": 4.0930232558139945,
+       "gap_abs": 1.3132606113686052e-11,
+       "gap_normalised": 1.4296254756691203e-12
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS53                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      5 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    5 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       4.09302326\n  Iterations      100\n  Solve time      0.0002 s\n  Duals available: 3 shadow prices, 5 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1753088,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 8.3625e-05,
+      "presolve": null,
+      "solve": 0.000122458,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.0056633750009496,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (0 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 4.093023255813953,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 5,
+      "nodes": null,
+      "solve_seconds": 0.000119958
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.440892098500626e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 4.093023255813954,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.163336342344337e-17,
+       "max_row_violation_scaled": 3.315249309644565e-17,
+       "worst_row": "R------2",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 4.440892098500626e-16,
+       "max_complementarity_abs": 4.162045385338959e-15,
+       "dual_objective": 4.093023255813954,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS53                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      5 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    5 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       4.09302326\n  Iterations      5\n  Solve time      0.0001 s\n  Duals available: 3 shadow prices, 5 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.216,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49774592,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.2193167919995176,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 4.093023255813954,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 4.8832e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 4.093023255813954,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 9.71445146547012e-17,
+       "max_row_violation_scaled": 7.735581722503986e-17,
+       "worst_row": "R------2",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.7763568394002505e-15,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 3.304849933767909e-16,
+       "dual_objective": 4.093023255813954,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs76.mps",
+   "instance_name": "hs76.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 4,
+    "constraints": 3,
+    "nonzeros": 10,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1802240,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 7.8666e-05,
+      "presolve": null,
+      "solve": 0.000169542,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005374041998948087,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": -4.681818181818181,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.000166542
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 8.93729534823251e-15,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -4.681818181818181,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 8.93729534823251e-15,
+       "max_complementarity_abs": 8937295348232510.0,
+       "dual_objective": -4.681818181818173,
+       "gap_abs": 7.993605777301127e-15,
+       "gap_normalised": 7.713128381606359e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "2 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS76                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      4 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    4 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       -4.68181818\n  Iterations      100\n  Solve time      0.0002 s\n  Duals available: 3 shadow prices, 4 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1753088,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 7.2458e-05,
+      "presolve": null,
+      "solve": 0.000141333,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.004856792000282439,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (2 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": -4.681818181818182,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 6,
+      "nodes": null,
+      "solve_seconds": 0.000139
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.11022302479169e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -4.681818181818182,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 0.0,
+       "max_sign_violation_abs": 1.11022302479169e-16,
+       "max_complementarity_abs": 111022302479169.0,
+       "dual_objective": -4.681818181818182,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "1 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS76                                        \u2502\n\u2502                                                      \u2502\n\u2502  Model      4 variables \u00b7 3 constraints              \u2502\n\u2502  Reduced    4 variables \u00b7 3 constraints              \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       -4.68181818\n  Iterations      6\n  Solve time      0.0001 s\n  Duals available: 3 shadow prices, 4 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.233,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 50184192,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.23586725000131992,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": -4.681818181818181,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 75,
+      "nodes": null,
+      "solve_seconds": 5.483199999999999e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -4.681818181818181,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 2.6562700277487396e-23,
+       "max_bound_violation_scaled": 2.6562700277487396e-23,
+       "worst_variable": "C------3",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 7.771561172376096e-16,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 0.0,
+       "dual_objective": -4.68181818181818,
+       "gap_abs": 8.881784197001252e-16,
+       "gap_normalised": 8.570142646229282e-17
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/hs118.mps",
+   "instance_name": "hs118.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 15,
+    "constraints": 17,
+    "nonzeros": 39,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.004,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1933312,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000185375,
+      "presolve": null,
+      "solve": 0.001780792,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.007316999999602558,
+     "termination": {
+      "status": "optimal",
+      "message": "converged",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 664.820450323033,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 1200,
+      "nodes": null,
+      "solve_seconds": 0.001776875
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 2.237500806856474e-08,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 664.8204503230329,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.5119919583559678e-26,
+       "max_sign_violation_abs": 2.237500806856474e-08,
+       "max_complementarity_abs": 1.9913757175288455e-06,
+       "dual_objective": 664.8204467899643,
+       "gap_abs": 3.5330685932422057e-06,
+       "gap_normalised": 2.6551630878831915e-09
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS118                                       \u2502\n\u2502                                                      \u2502\n\u2502  Model      15 variables \u00b7 17 constraints            \u2502\n\u2502  Reduced    15 variables \u00b7 17 constraints            \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       664.82045\n  Iterations      1200\n  Solve time      0.0018 s\n  Duals available: 17 shadow prices, 15 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1785856,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.00017075,
+      "presolve": null,
+      "solve": 0.000403375,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005553082999540493,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (16 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 664.8204499999998,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 8,
+      "nodes": null,
+      "solve_seconds": 0.00039975
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.440892098500626e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 664.8204499999998,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 4.440892098500626e-16,
+       "max_sign_violation_abs": 4.440892098500626e-16,
+       "max_complementarity_abs": 4.440892098498451e-06,
+       "dual_objective": 664.82045,
+       "gap_abs": 2.2737367544323206e-13,
+       "gap_normalised": 1.7087530936651058e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving HS118                                       \u2502\n\u2502                                                      \u2502\n\u2502  Model      15 variables \u00b7 17 constraints            \u2502\n\u2502  Reduced    15 variables \u00b7 17 constraints            \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       664.82045\n  Iterations      8\n  Solve time      0.0004 s\n  Duals available: 17 shadow prices, 15 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.217,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49676288,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.22060720799890987,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 664.8204499999999,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 725,
+      "nodes": null,
+      "solve_seconds": 0.000554207
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 664.8204499999999,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 0.0,
+       "max_row_violation_scaled": 0.0,
+       "worst_row": null,
+       "max_bound_violation_abs": 4.7733388854715376e-21,
+       "max_bound_violation_scaled": 7.955564809119229e-23,
+       "worst_variable": "C------6",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.7319479184152442e-14,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 0.0,
+       "dual_objective": 664.8204500000012,
+       "gap_abs": 1.2505552149377763e-12,
+       "gap_normalised": 9.398142015158073e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/genhs28.mps",
+   "instance_name": "genhs28.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 10,
+    "constraints": 8,
+    "nonzeros": 24,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1818624,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000115,
+      "presolve": null,
+      "solve": 0.000177416,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005506417001015507,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 0.9271736937663876,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 0.000174833
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 9.43689570931383e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.9271736937663876,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 1.176836406102666e-14,
+       "max_row_violation_scaled": 1.176836406102652e-14,
+       "worst_row": "R------6",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 5.551115123125783e-17,
+       "max_sign_violation_abs": 9.43689570931383e-16,
+       "max_complementarity_abs": 943689570931383.1,
+       "dual_objective": 0.9271736937663903,
+       "gap_abs": 2.6645352591003757e-15,
+       "gap_normalised": 9.33500691169735e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "8 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving GENHS28                                     \u2502\n\u2502                                                      \u2502\n\u2502  Model      10 variables \u00b7 8 constraints             \u2502\n\u2502  Reduced    10 variables \u00b7 8 constraints             \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       0.927173694\n  Iterations      50\n  Solve time      0.0002 s\n  Duals available: 8 shadow prices, 10 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.002,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1753088,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000119417,
+      "presolve": null,
+      "solve": 0.000125541,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.005360000001019216,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 0.9271736892835829,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 1,
+      "nodes": null,
+      "solve_seconds": 0.000123375
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 3.132943127148735e-09,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.9271736892835829,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.9816420443751213e-09,
+       "max_row_violation_scaled": 2.9816420443751213e-09,
+       "worst_row": "R------2",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 2.7755575615628914e-17,
+       "max_sign_violation_abs": 3.132943127148735e-09,
+       "max_complementarity_abs": 3.132943127148735e+21,
+       "dual_objective": 0.9271736968921351,
+       "gap_abs": 7.608552232696297e-09,
+       "gap_normalised": 2.66560134535352e-09
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "10 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving GENHS28                                     \u2502\n\u2502                                                      \u2502\n\u2502  Model      10 variables \u00b7 8 constraints             \u2502\n\u2502  Reduced    10 variables \u00b7 8 constraints             \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       0.927173689\n  Iterations      1\n  Solve time      0.0001 s\n  Duals available: 8 shadow prices, 10 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.213,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49758208,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.2170267919991602,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 0.9271736937663909,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 50,
+      "nodes": null,
+      "solve_seconds": 7.2958e-05
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 0.9271736937663909,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.220446049250313e-16,
+       "max_row_violation_scaled": 2.220446049250313e-16,
+       "worst_row": "R------5",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 4.718447854656915e-16,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 0.0,
+       "dual_objective": 0.9271736937663909,
+       "gap_abs": 0.0,
+       "gap_normalised": 0.0
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/lotschd.mps",
+   "instance_name": "lotschd.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 12,
+    "constraints": 7,
+    "nonzeros": 54,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.003,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1982464,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.0001275,
+      "presolve": null,
+      "solve": 0.001341625,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.006814790998760145,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 2398.415893069801,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.001327291
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.8664856144853275e-08,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 2398.415893069801,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.164692413155535e-08,
+       "max_row_violation_scaled": 5.154446035724089e-10,
+       "worst_row": "R------5",
+       "max_bound_violation_abs": 7.29981541004687e-09,
+       "max_bound_violation_scaled": 7.29981541004687e-09,
+       "worst_variable": "C------4",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 7.105427357601002e-15,
+       "max_sign_violation_abs": 4.8664856144853275e-08,
+       "max_complementarity_abs": 3.262211745180821e+22,
+       "dual_objective": 2398.4158920549307,
+       "gap_abs": 1.0148701221623924e-06,
+       "gap_normalised": 2.115268245353892e-10
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "4 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving LOTSCHD                                     \u2502\n\u2502                                                      \u2502\n\u2502  Model      12 variables \u00b7 7 constraints             \u2502\n\u2502  Reduced    12 variables \u00b7 7 constraints             \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       2398.41589\n  Iterations      100\n  Solve time      0.0013 s\n  Duals available: 7 shadow prices, 12 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.003,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1900544,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000121166,
+      "presolve": null,
+      "solve": 0.001286917,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.006148249998659594,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (7 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 2398.4158914488958,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 10,
+      "nodes": null,
+      "solve_seconds": 0.001272791
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 5.329070518200751e-15,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 2398.4158914488958,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.842170943040401e-14,
+       "max_row_violation_scaled": 1.1971356039041343e-16,
+       "worst_row": "R------7",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 5.917047896243616e-15,
+       "max_sign_violation_abs": 5.329070518200751e-15,
+       "max_complementarity_abs": 2364334217443115.0,
+       "dual_objective": 2398.4158914488953,
+       "gap_abs": 4.547473508864641e-13,
+       "gap_normalised": 9.47818455218549e-17
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "5 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving LOTSCHD                                     \u2502\n\u2502                                                      \u2502\n\u2502  Model      12 variables \u00b7 7 constraints             \u2502\n\u2502  Reduced    12 variables \u00b7 7 constraints             \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       2398.41589\n  Iterations      10\n  Solve time      0.0013 s\n  Duals available: 7 shadow prices, 12 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.213,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49479680,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.2166544169995177,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 2398.4158914488953,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 225,
+      "nodes": null,
+      "solve_seconds": 0.000183749
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 2398.4158914488953,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 1.0658141036401503e-14,
+       "max_row_violation_scaled": 1.0648616909681358e-16,
+       "worst_row": "R------3",
+       "max_bound_violation_abs": 4.642822390002712e-19,
+       "max_bound_violation_scaled": 4.642822390002712e-19,
+       "worst_variable": "C------2",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 9.769962616701378e-15,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 1.6412003590753328e-14,
+       "dual_objective": 2398.4158914488958,
+       "gap_abs": 4.547473508864641e-13,
+       "gap_normalised": 9.47818455218549e-17
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/qafiro.mps",
+   "instance_name": "qafiro.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 32,
+    "constraints": 27,
+    "nonzeros": 83,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.004,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1998848,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.00015825,
+      "presolve": null,
+      "solve": 0.0014435,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.007028541998806759,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": -1.590781687097948,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 150,
+      "nodes": null,
+      "solve_seconds": 0.001437708
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.291706961193155e-08,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -1.590781687097948,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.611102361653509e-09,
+       "max_row_violation_scaled": 4.611102361653509e-09,
+       "worst_row": "R09",
+       "max_bound_violation_abs": 1.933753310614529e-09,
+       "max_bound_violation_scaled": 1.933753310614529e-09,
+       "worst_variable": "X39",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 2.220446049250313e-16,
+       "max_sign_violation_abs": 4.291706961193155e-08,
+       "max_complementarity_abs": 3.963879660526543e+21,
+       "dual_objective": -1.5907820121977991,
+       "gap_abs": 3.250998510395675e-07,
+       "gap_normalised": 7.774599992206752e-08
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "4 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving AFIRO                                       \u2502\n\u2502                                                      \u2502\n\u2502  Model      32 variables \u00b7 27 constraints            \u2502\n\u2502  Reduced    32 variables \u00b7 23 constraints            \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       -1.59078169\n  Iterations      150\n  Solve time      0.0014 s\n  Duals available: 27 shadow prices, 32 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.003,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 1835008,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000155959,
+      "presolve": null,
+      "solve": 0.00117,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.006196459000420873,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (30 active bounds) after 3 active-set corrections",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": -1.5907817939055326,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 12,
+      "nodes": null,
+      "solve_seconds": 0.001162459
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 5.985497811674836e-16,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -1.5907817939055322,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 8.881784197001252e-16,
+       "max_row_violation_scaled": 8.553497360989262e-17,
+       "worst_row": "R13",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 4.9066328399449513e-17,
+       "max_sign_violation_abs": 5.985497811674836e-16,
+       "max_complementarity_abs": 49066328399449.516,
+       "dual_objective": -1.5907817939055324,
+       "gap_abs": 2.220446049250313e-16,
+       "gap_normalised": 5.310085575938011e-17
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "9 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving AFIRO                                       \u2502\n\u2502                                                      \u2502\n\u2502  Model      32 variables \u00b7 27 constraints            \u2502\n\u2502  Reduced    32 variables \u00b7 23 constraints            \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       -1.59078179\n  Iterations      12\n  Solve time      0.0012 s\n  Duals available: 27 shadow prices, 32 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.215,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49741824,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.21798683399902075,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": -1.5907817955834,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 300,
+      "nodes": null,
+      "solve_seconds": 0.000470749
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": -1.5907817955834,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.0563761804481828e-10,
+       "max_row_violation_scaled": 2.0563761804481828e-10,
+       "worst_row": "X48",
+       "max_bound_violation_abs": 1.6181262091333832e-10,
+       "max_bound_violation_scaled": 1.6181262091333832e-10,
+       "worst_variable": "X25",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 4.368416739453096e-10,
+       "max_sign_violation_abs": 1.7144692837155272e-16,
+       "max_complementarity_abs": 171446928371552.72,
+       "dual_objective": -1.5907817938079019,
+       "gap_abs": 1.7754981929130054e-09,
+       "gap_normalised": 4.2460150490535994e-10
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "4 multiplier(s) pointed at an infinite bound with magnitude below 1e-06 and were treated as zero"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/cvxqp1s.mps",
+   "instance_name": "cvxqp1s.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 100,
+    "constraints": 50,
+    "nonzeros": 148,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.385,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 7356416,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.00080575,
+      "presolve": null,
+      "solve": 0.381694583,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.3890193340012047,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 11590.718100361388,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 3850,
+      "nodes": null,
+      "solve_seconds": 0.381687292
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.0193903889899047e-06,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "feasible",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 11590.718100361388,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 4.478741200131253e-08,
+       "max_row_violation_scaled": 7.464568611165637e-09,
+       "worst_row": "R------3",
+       "max_bound_violation_abs": 2.4913021146044656e-08,
+       "max_bound_violation_scaled": 2.4913021146044657e-09,
+       "worst_variable": "C------3",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 2.2737367544323206e-13,
+       "max_sign_violation_abs": 1.0193903889899047e-06,
+       "max_complementarity_abs": 1.0044314432788645e-05,
+       "dual_objective": 11590.718109798114,
+       "gap_abs": 9.436726031708531e-06,
+       "gap_normalised": 4.0706360393533477e-10
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "duals present but KKT/gap did not close within tolerance; optimality not proven"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving CVXQP1                                      \u2502\n\u2502                                                      \u2502\n\u2502  Model      100 variables \u00b7 50 constraints           \u2502\n\u2502  Reduced    100 variables \u00b7 50 constraints           \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       11590.7181\n  Iterations      3850\n  Solve time      0.3817 s\n  Duals available: 50 shadow prices, 100 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.007,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 2097152,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.00081625,
+      "presolve": null,
+      "solve": 0.003515292,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.01098779200037825,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (36 active bounds) after 2 active-set corrections",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 11590.718119426763,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 13,
+      "nodes": null,
+      "solve_seconds": 0.003508792
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 9.094947017729282e-13,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 11590.718119426763,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 1.7763568394002505e-15,
+       "max_row_violation_scaled": 2.96059473233375e-16,
+       "worst_row": "R------1",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 9.094947017729282e-13,
+       "max_sign_violation_abs": 9.094947017729282e-13,
+       "max_complementarity_abs": 4.057296101204856e-12,
+       "dual_objective": 11590.718119426754,
+       "gap_abs": 9.094947017729282e-12,
+       "gap_normalised": 3.923205880530472e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving CVXQP1                                      \u2502\n\u2502                                                      \u2502\n\u2502  Model      100 variables \u00b7 50 constraints           \u2502\n\u2502  Reduced    100 variables \u00b7 50 constraints           \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       11590.7181\n  Iterations      13\n  Solve time      0.0035 s\n  Duals available: 50 shadow prices, 100 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.229,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 50020352,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.23322512500089942,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 11590.718131125679,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 625,
+      "nodes": null,
+      "solve_seconds": 0.003921665
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 11590.718131125679,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 8.72546479513403e-11,
+       "max_row_violation_scaled": 1.4542441325223384e-11,
+       "worst_row": "R------3",
+       "max_bound_violation_abs": 4.092757938112257e-10,
+       "max_bound_violation_scaled": 4.092757938112257e-11,
+       "worst_variable": "C------9",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 4.985395207768306e-08,
+       "max_sign_violation_abs": 2.2170765515739802e-15,
+       "max_complementarity_abs": 1.1464731375536067e-05,
+       "dual_objective": 11590.71811937287,
+       "gap_abs": 1.17528088594554e-05,
+       "gap_normalised": 5.069703948480674e-10
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/cvxqp2s.mps",
+   "instance_name": "cvxqp2s.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 100,
+    "constraints": 25,
+    "nonzeros": 74,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.314,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 7782400,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.00073025,
+      "presolve": null,
+      "solve": 0.310051917,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.3180806250002206,
+     "termination": {
+      "status": "optimal",
+      "message": "converged (polishing rejected: no improvement)",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 8120.9404582758925,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 350,
+      "nodes": null,
+      "solve_seconds": 0.310046042
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 3.7089290572112077e-07,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 8120.940458275893,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 3.4540856397313746e-08,
+       "max_row_violation_scaled": 5.756809399552291e-09,
+       "worst_row": "R-----25",
+       "max_bound_violation_abs": 1.6822449544484641e-09,
+       "max_bound_violation_scaled": 1.6822449544484642e-10,
+       "worst_variable": "C-----30",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 5.684341886080802e-14,
+       "max_sign_violation_abs": 3.7089290572112077e-07,
+       "max_complementarity_abs": 3.3415747088107567e-06,
+       "dual_objective": 8120.940478026232,
+       "gap_abs": 1.9750338651647326e-05,
+       "gap_normalised": 1.2159381534039436e-09
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving CVXQP2                                      \u2502\n\u2502                                                      \u2502\n\u2502  Model      100 variables \u00b7 25 constraints           \u2502\n\u2502  Reduced    100 variables \u00b7 25 constraints           \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       8120.94046\n  Iterations      350\n  Solve time      0.3100 s\n  Duals available: 25 shadow prices, 100 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.005,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 2048000,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000738708,
+      "presolve": null,
+      "solve": 0.001965917,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.00929595800153038,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (56 active bounds)",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 8120.94047725069,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 14,
+      "nodes": null,
+      "solve_seconds": 0.001960583
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 1.7053025658242404e-13,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 8120.94047725069,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 8.881784197001252e-16,
+       "max_row_violation_scaled": 1.4802973661668753e-16,
+       "worst_row": "R------2",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 8.526512829121202e-14,
+       "max_sign_violation_abs": 1.7053025658242404e-13,
+       "max_complementarity_abs": 7.365361299229678e-13,
+       "dual_objective": 8120.940477250686,
+       "gap_abs": 3.637978807091713e-12,
+       "gap_normalised": 2.239737406979839e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving CVXQP2                                      \u2502\n\u2502                                                      \u2502\n\u2502  Model      100 variables \u00b7 25 constraints           \u2502\n\u2502  Reduced    100 variables \u00b7 25 constraints           \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       8120.94048\n  Iterations      14\n  Solve time      0.0020 s\n  Duals available: 25 shadow prices, 100 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.222,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49627136,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.22538833399994473,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 8120.94047725069,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 100,
+      "nodes": null,
+      "solve_seconds": 0.0008316239999999999
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 8120.94047725069,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.6645352591003757e-15,
+       "max_row_violation_scaled": 4.440892098500626e-16,
+       "worst_row": "R-----12",
+       "max_bound_violation_abs": 2.7755575615628914e-17,
+       "max_bound_violation_scaled": 2.7755575615628915e-18,
+       "worst_variable": "C-----33",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 5.115907697472721e-13,
+       "max_sign_violation_abs": 0.0,
+       "max_complementarity_abs": 4.636281651743227e-13,
+       "dual_objective": 8120.940477250683,
+       "gap_abs": 6.366462912410498e-12,
+       "gap_normalised": 3.91954046221472e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  },
+  {
+   "instance": "benchmarks/instances/qp/mps/cvxqp3s.mps",
+   "instance_name": "cvxqp3s.mps",
+   "best_known_objective": null,
+   "parse_check": {
+    "status": "agree",
+    "problem_class": "QP",
+    "variables": 100,
+    "constraints": 75,
+    "nonzeros": 222,
+    "differences": [],
+    "difference_count": 0,
+    "independent_reader_warnings": []
+   },
+   "runs": [
+    {
+     "solver": "optimsolver:qp",
+     "engine_use": {
+      "requested": "qp",
+      "dispatched": "qp",
+      "executed": "qp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.072,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 2310144,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000918458,
+      "presolve": null,
+      "solve": 0.068641042,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.07551408299877949,
+     "termination": {
+      "status": "limit_reached",
+      "message": "; engine result: Lower bound violation on variable C----100",
+      "dispatched_engine": "qp",
+      "executed_engine": "qp",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "qp",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": null,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 5000,
+      "nodes": null,
+      "solve_seconds": 0.068632125
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": null,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": "No complete primal solution is available.",
+     "check": {
+      "verdict": "no_point",
+      "solver_status": "limit_reached",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": null,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": null,
+       "max_row_violation_scaled": null,
+       "worst_row": null,
+       "max_bound_violation_abs": null,
+       "max_bound_violation_scaled": null,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": false,
+       "reason": null,
+       "max_stationarity_abs": null,
+       "max_sign_violation_abs": null,
+       "max_complementarity_abs": null,
+       "dual_objective": null,
+       "gap_abs": null,
+       "gap_normalised": null
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": [
+       "solver returned no primal point"
+      ]
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving CVXQP3                                      \u2502\n\u2502                                                      \u2502\n\u2502  Model      100 variables \u00b7 75 constraints           \u2502\n\u2502  Reduced    100 variables \u00b7 75 constraints           \u2502\n\u2502  Engine     qp                                       \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n! Limit Reached\n\n  Iterations      5000\n  Solve time      0.0686 s\n  No feasible solution available.\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "optimsolver:barrier",
+     "engine_use": {
+      "requested": "barrier",
+      "dispatched": "barrier",
+      "executed": "barrier",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.009,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 2146304,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": {
+      "parse": 0.000918292,
+      "presolve": null,
+      "solve": 0.005367042,
+      "postsolve": null
+     },
+     "orchestrator_wall_seconds": 0.013609249999717576,
+     "termination": {
+      "status": "optimal",
+      "message": "barrier: converged: relative primal, dual and gap tolerances met; polished to the identified active set (24 active bounds) after 3 active-set corrections",
+      "dispatched_engine": "barrier",
+      "executed_engine": "barrier",
+      "engine_reason": "engine forced by the caller"
+     },
+     "settings": {
+      "requested_engine": "barrier",
+      "time_limit_seconds": 59,
+      "tolerance": 1e-08,
+      "thread_count": 1
+     },
+     "solver_objective": 11943.432202309965,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 12,
+      "nodes": null,
+      "solve_seconds": 0.005358917
+     },
+     "self_reported": {
+      "max_bound_residual": null,
+      "max_constraint_residual": null,
+      "max_dual_residual": 4.831690603168681e-13,
+      "max_integrality_violation": 0
+     },
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 11943.432202309965,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 2.6645352591003757e-15,
+       "max_row_violation_scaled": 4.440892098500624e-16,
+       "worst_row": "R------7",
+       "max_bound_violation_abs": 0.0,
+       "max_bound_violation_scaled": 0.0,
+       "worst_variable": null,
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 4.831690603168681e-13,
+       "max_sign_violation_abs": 4.831690603168681e-13,
+       "max_complementarity_abs": 4.36591562902322e-12,
+       "dual_objective": 11943.432202309968,
+       "gap_abs": 3.637978807091713e-12,
+       "gap_normalised": 1.522940161359977e-16
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "\u256d\u2500 OPTIMSOLVER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502                                                      \u2502\n\u2502  Solving CVXQP3                                      \u2502\n\u2502                                                      \u2502\n\u2502  Model      100 variables \u00b7 75 constraints           \u2502\n\u2502  Reduced    100 variables \u00b7 75 constraints           \u2502\n\u2502  Engine     barrier                                  \u2502\n\u2502                                                      \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\n\n\u2713 Optimal\n\n  Objective       11943.4322\n  Iterations      12\n  Solve time      0.0054 s\n  Duals available: 75 shadow prices, 100 reduced costs\n",
+      "stderr_tail": ""
+     }
+    },
+    {
+     "solver": "osqp",
+     "engine_use": {
+      "requested": null,
+      "dispatched": "osqp",
+      "executed": "osqp",
+      "fallback": false,
+      "counts_for_requested": true,
+      "reason": null
+     },
+     "process": {
+      "run_status": "SUCCESS",
+      "exit_code": 0,
+      "terminating_signal": null,
+      "timed_out": false,
+      "killed_process_tree": false,
+      "escalated_to_sigkill": false,
+      "launch_failed": false,
+      "launch_error": null,
+      "wall_seconds": 0.216,
+      "timeout_seconds": 60,
+      "peak_memory_bytes": 49594368,
+      "stdout_truncated": false,
+      "stderr_truncated": false
+     },
+     "stage_seconds": null,
+     "orchestrator_wall_seconds": 0.2195497089996934,
+     "termination": {
+      "status": "optimal",
+      "message": "solved",
+      "executed_engine": "osqp",
+      "dispatched_engine": "osqp",
+      "reason": "unspecified"
+     },
+     "settings": {
+      "requested_engine": "osqp",
+      "tolerance": 1e-08,
+      "time_limit_seconds": 59.0
+     },
+     "solver_objective": 11943.432201966878,
+     "dual_bound": null,
+     "mip_gap": null,
+     "work": {
+      "iterations": 150,
+      "nodes": null,
+      "solve_seconds": 0.001494415
+     },
+     "self_reported": null,
+     "duals_unavailable_reason": null,
+     "check": {
+      "verdict": "optimal_verified",
+      "solver_status": "optimal",
+      "tolerances": {
+       "feasibility_absolute": 1e-06,
+       "feasibility_relative": 1e-08,
+       "integrality_absolute": 1e-06,
+       "optimality_normalised": 1e-06,
+       "frozen": true
+      },
+      "objective_recomputed": 11943.432201966878,
+      "nonfinite": {
+       "count": 0,
+       "variables": []
+      },
+      "primal": {
+       "max_row_violation_abs": 1.8486545627638407e-11,
+       "max_row_violation_scaled": 3.0810909379302412e-12,
+       "worst_row": "R-----75",
+       "max_bound_violation_abs": 1.7078231467904104e-09,
+       "max_bound_violation_scaled": 1.7078231467904103e-10,
+       "worst_variable": "C-----18",
+       "rows_violating": 0,
+       "variables_violating": 0
+      },
+      "integrality": {
+       "checked": false,
+       "max_violation_abs": null,
+       "worst_variable": null,
+       "variables_violating": 0
+      },
+      "dual": {
+       "available": true,
+       "reason": null,
+       "max_stationarity_abs": 1.627801395898132e-07,
+       "max_sign_violation_abs": 1.4780510343826529e-15,
+       "max_complementarity_abs": 2.6105764397990176e-08,
+       "dual_objective": 11943.432202438727,
+       "gap_abs": 4.7184948925860226e-07,
+       "gap_normalised": 1.9752686187032263e-11
+      },
+      "best_known": {
+       "value": null,
+       "abs_difference": null,
+       "normalised_difference": null,
+       "agrees": null
+      },
+      "notes": []
+     },
+     "logs": {
+      "stdout_tail": "",
+      "stderr_tail": ""
+     }
+    }
+   ]
+  }
+ ]
+}
