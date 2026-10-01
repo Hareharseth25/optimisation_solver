@@ -39,6 +39,8 @@ std::string ArgumentParser::getSolveHelp() {
            "  --threads <n>           Worker threads (0 = auto, 1 = serial)\n"
            "  --backend <name>        Compute backend for PDLP/QP: auto (default), cpu, cuda\n"
            "  --cuda-device <index>   CUDA device to use with --backend cuda/auto (default 0)\n"
+           "  --verbose               Print the full execution report (presolve, dispatch,\n"
+           "                          stage timings, validation residuals)\n"
            "  .nlp input             Routes to NLP; see solve-nlp --help for its options\n"
            "                         NLP success means first-order stationarity.\n"
            "  -h, --help              Show this help message";
@@ -63,7 +65,7 @@ std::string ArgumentParser::getNlpHelp() {
            "  --output file          Write the evaluated iterate and status\n"
            "  -h, --help             Show this help\n"
            "Returns first-order stationarity, not global optimality.\n"
-           "--threads and --dump-model are not supported for NLP.\n";
+           "--threads, --dump-model and --verbose are not supported for NLP.\n";
 }
 
 ParseResult ArgumentParser::parse(int argc, const char* const argv[]) {
@@ -111,6 +113,8 @@ ParseResult ArgumentParser::parse(int argc, const char* const argv[]) {
             res.solveOptions.help = true;
             res.success = true;
             return res;
+        } else if (arg == "--verbose") {
+            res.solveOptions.verbose = true;
         } else if (arg == "--tolerance" || arg == "--iterations") {
             if (i + 1 >= argc) {
                 res.errorTitle = "Missing value for option '" + arg + "'";

@@ -117,6 +117,10 @@ struct DispatchDecision {
     std::string reason;
 };
 
+// Constraint-matrix nonzeros with |a_ij| > 1e-9: the count the size threshold
+// below is compared against. Public so reports use the same rule.
+[[nodiscard]] std::int64_t countNonzeros(const model::Model& model);
+
 // Chooses an engine for the REDUCED model.
 //
 // This runs AFTER presolve, and the distinction matters:

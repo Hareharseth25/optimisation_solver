@@ -1,0 +1,153 @@
+{
+ "httpStatus": 200,
+ "body": {
+  "outcome": "completed",
+  "record": {
+   "schema": "optimsolver.solve.v1",
+   "instance": {
+    "path": "model.mps",
+    "sha256": "50b72d3d38547ccc5a6bec2d35eb7326bfde24317bbb5fae74361a6a81ed3d01",
+    "variables": 3,
+    "constraints": 1,
+    "objective_sense": "max"
+   },
+   "solver": {
+    "name": "optimsolver",
+    "commit": "97c1474774bede37210821c62158296f904cdbb6",
+    "build_type": "Release"
+   },
+   "compute_backend": {
+    "requested": "auto",
+    "executed": "cpu",
+    "requested_device": 0,
+    "executed_device": null,
+    "reason": "engine executed on cpu"
+   },
+   "settings": {
+    "requested_engine": null,
+    "time_limit_seconds": null,
+    "tolerance": 1e-08,
+    "thread_count": 1
+   },
+   "classification": {
+    "problem_class": "MILP",
+    "num_binary": 3,
+    "num_integer": 0,
+    "num_continuous": 0,
+    "nonzeros": 3,
+    "coef_range_ratio": 2,
+    "num_rows": 1,
+    "num_columns": 3,
+    "has_network_structure": false,
+    "has_big_m": false,
+    "max_big_m": 0,
+    "has_set_partitioning": false,
+    "symmetric_groups": 0
+   },
+   "presolve": {
+    "infeasible": false,
+    "converged": true,
+    "reduced_variables": 3,
+    "reduced_constraints": 1,
+    "transformations": 0,
+    "original_variables": 3,
+    "original_constraints": 1,
+    "original_nonzeros": 3,
+    "reduced_nonzeros": 3,
+    "transformations_by_type": {
+     "remove_variable": 0,
+     "remove_constraint": 0,
+     "fix_variable": 0,
+     "substitute_variable": 0,
+     "tighten_lower_bound": 0,
+     "tighten_upper_bound": 0
+    }
+   },
+   "dispatch": {
+    "invoked": true,
+    "engine": "branch_and_cut",
+    "reason": "integer variables survive presolve",
+    "executed_engine": "branch_and_cut"
+   },
+   "validation": {
+    "reduced_space": {
+     "passed": true,
+     "status": "success",
+     "failure": null,
+     "max_bound_residual": 0,
+     "max_constraint_residual": 0,
+     "max_bound_residual_scaled": 0,
+     "max_constraint_residual_scaled": 0,
+     "objective": 7,
+     "engine_reported_objective": 7
+    },
+    "original_space": {
+     "passed": true,
+     "status": "success",
+     "failure": null,
+     "max_bound_residual": 0,
+     "max_constraint_residual": 0,
+     "max_bound_residual_scaled": 0,
+     "max_constraint_residual_scaled": 0,
+     "objective": 7,
+     "duals_requested": false
+    }
+   },
+   "termination": {
+    "status": "optimal",
+    "message": "branch-and-cut",
+    "dispatched_engine": "branch_and_cut",
+    "executed_engine": "branch_and_cut",
+    "engine_reason": "integer variables survive presolve"
+   },
+   "objective": 7,
+   "dual_bound": null,
+   "mip_gap": null,
+   "primal": [
+    1,
+    1,
+    0
+   ],
+   "duals": null,
+   "reduced_costs": null,
+   "duals_unavailable_reason": "Dual sensitivities are unavailable for integer models.",
+   "self_reported": {
+    "max_bound_residual": 0,
+    "max_constraint_residual": 0,
+    "max_dual_residual": null,
+    "max_integrality_violation": 0,
+    "integrality_respected": true
+   },
+   "stage_seconds": {
+    "parse": 7.0375e-05,
+    "presolve": 3.625e-06,
+    "solve": 0.000130208,
+    "postsolve": 1e-06,
+    "validation": 9.170000000000001e-07,
+    "classification": 5.583e-06,
+    "dispatch": 4.16e-07,
+    "engine": 0.000114666,
+    "reduced_validation": 1e-06,
+    "total": 0.000127958
+   },
+   "work": {
+    "iterations": null,
+    "nodes": 1,
+    "solve_seconds": 0.000127958
+   },
+   "variable_names": [
+    "A",
+    "B",
+    "C"
+   ],
+   "constraint_names": [
+    "CAP"
+   ]
+  },
+  "error": null,
+  "process": {
+   "exit_code": 0,
+   "wall_seconds": 0.004060792000000001
+  }
+ }
+}

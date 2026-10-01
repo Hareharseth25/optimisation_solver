@@ -30,6 +30,10 @@ struct SolveOptions {
 
     std::optional<double> tolerance;
     std::optional<int> iterationLimit;
+
+    // Print the full solver execution report (classification, presolve,
+    // dispatch, stage timings, validation) after the normal summary.
+    bool verbose = false;
     bool help = false;
 };
 

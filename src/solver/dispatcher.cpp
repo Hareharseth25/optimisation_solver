@@ -9,6 +9,17 @@ namespace {
 
 constexpr double kEps = 1e-9;
 
+bool hasIntegrality(const model::Model& model) {
+    for (const auto& variable : model.variables) {
+        if (variable.type != model::VariableType::Continuous) {
+            return true;
+        }
+    }
+    return false;
+}
+
+}  // namespace
+
 std::int64_t countNonzeros(const model::Model& model) {
     std::int64_t total = 0;
     for (const auto& constraint : model.constraints) {
@@ -20,17 +31,6 @@ std::int64_t countNonzeros(const model::Model& model) {
     }
     return total;
 }
-
-bool hasIntegrality(const model::Model& model) {
-    for (const auto& variable : model.variables) {
-        if (variable.type != model::VariableType::Continuous) {
-            return true;
-        }
-    }
-    return false;
-}
-
-}  // namespace
 
 const char* toString(Engine value) noexcept {
     switch (value) {

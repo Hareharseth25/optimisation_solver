@@ -168,20 +168,24 @@ void printMascot(std::ostream& out, const TerminalStyle& s, MascotState state) {
 
     out << "        " << s.boldCyan() << "(x)" << s.dim() << "───" << s.boldCyan() << "(y)" << s.reset() << "       \n";
     out << "         " << s.dim() << "│  " << s.boldCyan() << "∇" << s.dim() << "  │" << s.reset() << "        "
-        << s.boldCyan() << "OPTIMSOLVER" << s.reset() << "\n";
+        << s.boldCyan() << "KAIRO" << s.reset() << "\n";
     out << "       " << s.dim() << "╭─┴─────┴─╮" << s.reset() << "      "
-        << s.dim() << "Mathematical Optimization Engine" << s.reset() << "\n";
+        << s.dim() << "Kernel for Advanced Integer & Real Optimization" << s.reset() << "\n";
     out << "       " << s.dim() << "│  " << eyeColor << eyeMotif << s.dim() << "  │" << s.reset() << "      \n";
     out << "       " << s.dim() << "│ " << mouthColor << mouthMotif << s.dim() << "│" << s.reset() << "      "
         << s.dim() << "Problem Families:  " << s.reset()
         << s.bold() << "LP" << s.reset() << " " << s.dim() << "·" << s.reset() << " "
         << s.bold() << "QP" << s.reset() << " " << s.dim() << "·" << s.reset() << " "
-        << s.bold() << "MILP" << s.reset() << "\n";
+        << s.bold() << "MILP" << s.reset() << " " << s.dim() << "·" << s.reset() << " "
+        << s.bold() << "MIQP" << s.reset() << " " << s.dim() << "·" << s.reset() << " "
+        << s.bold() << "NLP" << s.reset() << "\n";
     out << "       " << s.dim() << "│ ─────── │" << s.reset() << "      "
         << s.dim() << "Solver Engines:    " << s.reset()
         << "PDLP " << s.dim() << "·" << s.reset() << " Dual Simplex "
+        << s.dim() << "·" << s.reset() << " Barrier "
         << s.dim() << "·" << s.reset() << " Branch & Cut "
-        << s.dim() << "·" << s.reset() << " QP\n";
+        << s.dim() << "·" << s.reset() << " ADMM QP "
+        << s.dim() << "·" << s.reset() << " SQP\n";
     out << "       " << s.dim() << "╰──┬───┬──╯" << s.reset() << "      \n";
     out << "         " << s.dim() << "═╧═══╧═" << s.reset() << "        \n";
 }
@@ -222,6 +226,8 @@ void printSolveHelp(std::ostream& out) {
     out << "  --output <file>         Write reconstructed original-space solution to file\n";
     out << "  --backend <name>        Compute backend for PDLP/QP: auto (default), cpu, cuda\n";
     out << "  --cuda-device <index>   CUDA device to use with --backend cuda/auto (default 0)\n";
+    out << "  --verbose               Print the full execution report (presolve, dispatch,\n";
+    out << "                          stage timings, validation residuals)\n";
     out << "  -h, --help              Show this help message\n\n";
     out << s.bold() << "Examples" << s.reset() << "\n";
     out << "  optimsolver solve model.mps\n";
@@ -273,9 +279,9 @@ void printHomeScreenBanner(std::ostream& out, const TerminalStyle& s, int width)
 
     out << topBorder << "\n";
     out << s.dim() << "│" << std::string(width - 2, ' ') << "│" << s.reset() << "\n";
-    printCentered("OPTIMISATION SOLVER", s.boldCyan());
+    printCentered("KAIRO", s.boldCyan());
     out << s.dim() << "│" << std::string(width - 2, ' ') << "│" << s.reset() << "\n";
-    printCentered("Modular Mathematical Optimization Engine", s.dim());
+    printCentered("Kernel for Advanced Integer & Real Optimization", s.dim());
     printCentered("SIH26 • SIH26119", s.bold());
     out << s.dim() << "│" << std::string(width - 2, ' ') << "│" << s.reset() << "\n";
     out << botBorder << "\n";
@@ -317,10 +323,17 @@ void printInteractiveMenu(std::ostream& out, const TerminalStyle& s, bool hasMod
 void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, const TerminalStyle& s) {
     std::string vStr = (info.originalVars == 1) ? "1 variable" : (std::to_string(info.originalVars) + " variables");
     std::string cStr = (info.originalCons == 1) ? "1 constraint" : (std::to_string(info.originalCons) + " constraints");
-    std::string modelPlain = "Model      " + vStr + " · " + cStr;
+    const auto nonzeroSuffix = [&](std::int64_t count, bool styled) -> std::string {
+        if (count < 0) return "";
+        const std::string word = count == 1 ? " nonzero" : " nonzeros";
+        return styled ? " " + s.dim() + "·" + s.reset() + " " + s.bold() + std::to_string(count) + s.reset() + word
+                      : " · " + std::to_string(count) + word;
+    };
+    std::string modelPlain = "Model      " + vStr + " · " + cStr + nonzeroSuffix(info.originalNonzeros, false);
     std::string modelStyled = s.dim() + "Model" + s.reset() + "      " + s.bold() + std::to_string(info.originalVars) + s.reset() +
                               " " + (info.originalVars == 1 ? "variable" : "variables") + " " + s.dim() + "·" + s.reset() + " " +
-                              s.bold() + std::to_string(info.originalCons) + s.reset() + " " + (info.originalCons == 1 ? "constraint" : "constraints");
+                              s.bold() + std::to_string(info.originalCons) + s.reset() + " " + (info.originalCons == 1 ? "constraint" : "constraints") +
+                              nonzeroSuffix(info.originalNonzeros, true);
 
     std::string redPlain;
     std::string redStyled;
@@ -330,10 +343,11 @@ void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, cons
     } else {
         std::string rvStr = (info.reducedVars == 1) ? "1 variable" : (std::to_string(info.reducedVars) + " variables");
         std::string rcStr = (info.reducedCons == 1) ? "1 constraint" : (std::to_string(info.reducedCons) + " constraints");
-        redPlain = "Reduced    " + rvStr + " · " + rcStr;
+        redPlain = "Reduced    " + rvStr + " · " + rcStr + nonzeroSuffix(info.reducedNonzeros, false);
         redStyled = s.dim() + "Reduced" + s.reset() + "    " + s.bold() + std::to_string(info.reducedVars) + s.reset() +
                     " " + (info.reducedVars == 1 ? "variable" : "variables") + " " + s.dim() + "·" + s.reset() + " " +
-                    s.bold() + std::to_string(info.reducedCons) + s.reset() + " " + (info.reducedCons == 1 ? "constraint" : "constraints");
+                    s.bold() + std::to_string(info.reducedCons) + s.reset() + " " + (info.reducedCons == 1 ? "constraint" : "constraints") +
+                    nonzeroSuffix(info.reducedNonzeros, true);
     }
 
     std::string enginePlain = "Engine     " + info.engineName;
@@ -351,12 +365,16 @@ void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, cons
     std::vector<BoxLine> lines = {
         {"", ""},
         {solvingStyled, solvingPlain},
-        {"", ""},
-        {modelStyled, modelPlain},
-        {redStyled, redPlain},
-        {engineStyled, enginePlain},
         {"", ""}
     };
+    if (!info.classification.empty()) {
+        lines.push_back({s.dim() + "Class" + s.reset() + "      " + info.classification,
+                         "Class      " + info.classification});
+    }
+    lines.push_back({modelStyled, modelPlain});
+    lines.push_back({redStyled, redPlain});
+    lines.push_back({engineStyled, enginePlain});
+    lines.push_back({"", ""});
 
     std::size_t maxPlainLen = 0;
     for (const auto& line : lines) {
@@ -371,7 +389,9 @@ void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, cons
     for (std::size_t i = 0; i < totalWidth - 16; ++i) {
         hDash += "─";
     }
-    std::string topBorder = s.dim() + "╭─" + s.reset() + " " + s.boldCyan() + "OPTIMSOLVER" + s.reset() + " " +
+    // Title "KAIRO" is 5 columns; "╭─ " + title + " " + hDash + "╮" spans totalWidth.
+    for (int i = 0; i < 6; ++i) hDash += "─";
+    std::string topBorder = s.dim() + "╭─" + s.reset() + " " + s.boldCyan() + "KAIRO" + s.reset() + " " +
                             s.dim() + hDash + "╮" + s.reset();
 
     std::string hDashBot;

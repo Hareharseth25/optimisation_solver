@@ -38,6 +38,9 @@ enum class PostsolveStatus {
   InternalError
 };
 
+// Stable snake_case name, e.g. "constraint_violation".
+[[nodiscard]] const char* toString(PostsolveStatus status) noexcept;
+
 struct PostsolveResult {
   PostsolveStatus status = PostsolveStatus::InternalError;
   std::string errorMessage;

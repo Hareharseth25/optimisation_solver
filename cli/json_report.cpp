@@ -179,6 +179,50 @@ void writeNames(std::ostream& out, const std::vector<std::string>& names) {
     out << ']';
 }
 
+void writeBool(std::ostream& out, bool value) {
+    out << (value ? "true" : "false");
+}
+
+// Negative is the "stage did not run" sentinel used throughout.
+void writeSeconds(std::ostream& out, double seconds) {
+    if (seconds >= 0.0) {
+        writeNumber(out, seconds);
+    } else {
+        out << "null";
+    }
+}
+
+void writeEngineOrNull(std::ostream& out, solver::Engine engine) {
+    // Engine::Unsupported as an EXECUTED engine means nothing was invoked.
+    if (engine == solver::Engine::Unsupported) {
+        out << "null";
+    } else {
+        writeString(out, solver::toString(engine));
+    }
+}
+
+// Fields shared by the reduced- and original-space validation records. A
+// residual that was not measured (the check failed before finishing) is NaN
+// in the report and therefore null here.
+void writeValidationFields(std::ostream& out, const solver::ValidationSummary& check) {
+    out << "\"passed\": ";
+    writeBool(out, check.passed);
+    out << ", \"status\": ";
+    writeString(out, postsolve::toString(check.status));
+    out << ", \"failure\": ";
+    if (check.failure.empty()) out << "null"; else writeString(out, check.failure);
+    out << ", \"max_bound_residual\": ";
+    writeNumber(out, check.maxBoundResidual);
+    out << ", \"max_constraint_residual\": ";
+    writeNumber(out, check.maxConstraintResidual);
+    out << ", \"max_bound_residual_scaled\": ";
+    writeNumber(out, check.maxBoundResidualScaled);
+    out << ", \"max_constraint_residual_scaled\": ";
+    writeNumber(out, check.maxConstraintResidualScaled);
+    out << ", \"objective\": ";
+    writeNumber(out, check.objectiveValue);
+}
+
 }  // namespace
 
 std::string sha256File(const std::string& path) {
@@ -304,8 +348,19 @@ bool writeJsonReport(std::ostream& out,
     } else {
         writeString(out, input.instanceSha256);
     }
-    out << ", \"variables\": " << input.originalVariables
-        << ", \"constraints\": " << input.originalConstraints << "},\n";
+    // Dimensions are unknown, not zero, when the model was never read.
+    out << ", \"variables\": ";
+    if (input.originalModel != nullptr) out << input.originalVariables; else out << "null";
+    out << ", \"constraints\": ";
+    if (input.originalModel != nullptr) out << input.originalConstraints; else out << "null";
+    out << ", \"objective_sense\": ";
+    if (input.originalModel != nullptr) {
+        writeString(out, input.originalModel->objective.sense == model::ObjectiveSense::Maximize
+                             ? "max" : "min");
+    } else {
+        out << "null";
+    }
+    out << "},\n";
 
     out << "  \"solver\": {\"name\": \"optimsolver\", \"commit\": ";
 #ifdef OPTIMSOLVER_GIT_COMMIT
@@ -350,29 +405,108 @@ bool writeJsonReport(std::ostream& out,
     out << ", \"thread_count\": " << input.threadCount;
     out << "},\n";
 
+    // Everything from here to "termination" describes how the solve ran and
+    // comes from the SolveReport of the same solver::solve() call. A section
+    // that did not run is null, never zero-filled.
+    const solver::SolveReport* report = input.report;
+
     out << "  \"classification\": ";
-    if (input.classification != nullptr) {
+    if (report != nullptr && report->classification.has_value()) {
+        const solver::Classification& classification = *report->classification;
+        const solver::StructureHints& hints = classification.hints;
         out << "{\"problem_class\": ";
-        writeString(out, solver::toString(input.classification->problemClass));
-        out << ", \"num_binary\": " << input.classification->hints.numBinary
-            << ", \"num_integer\": " << input.classification->hints.numInteger
-            << ", \"num_continuous\": " << input.classification->hints.numContinuous
-            << ", \"nonzeros\": " << input.classification->hints.numNonzeros
+        writeString(out, solver::toString(classification.problemClass));
+        out << ", \"num_binary\": " << hints.numBinary
+            << ", \"num_integer\": " << hints.numInteger
+            << ", \"num_continuous\": " << hints.numContinuous
+            << ", \"nonzeros\": " << hints.numNonzeros
             << ", \"coef_range_ratio\": ";
-        writeNumber(out, input.classification->hints.coefRangeRatio);
-        out << "}";
+        writeNumber(out, hints.coefRangeRatio);
+        out << ", \"num_rows\": " << hints.numRows
+            << ", \"num_columns\": " << hints.numColumns
+            << ", \"has_network_structure\": ";
+        writeBool(out, hints.hasNetworkStructure);
+        out << ", \"has_big_m\": ";
+        writeBool(out, hints.hasBigM);
+        out << ", \"max_big_m\": ";
+        writeNumber(out, hints.maxBigM);
+        out << ", \"has_set_partitioning\": ";
+        writeBool(out, hints.hasSetPartitioning);
+        out << ", \"symmetric_groups\": " << hints.symmetricGroups << "}";
     } else {
         out << "null";
     }
     out << ",\n";
 
     out << "  \"presolve\": ";
-    if (input.presolve != nullptr) {
-        out << "{\"infeasible\": " << (input.presolve->infeasible ? "true" : "false")
-            << ", \"converged\": " << (input.presolve->converged ? "true" : "false")
-            << ", \"reduced_variables\": " << input.presolve->presolvedVariables
-            << ", \"reduced_constraints\": " << input.presolve->presolvedConstraints
-            << ", \"transformations\": " << input.presolve->transformations.size() << "}";
+    if (report != nullptr && report->presolve.has_value()) {
+        const solver::PresolveSummary& presolve = *report->presolve;
+        const auto& byType = presolve.transformationsByType;
+        out << "{\"infeasible\": ";
+        writeBool(out, presolve.infeasible);
+        out << ", \"converged\": ";
+        writeBool(out, presolve.converged);
+        out << ", \"reduced_variables\": " << presolve.reducedVariables
+            << ", \"reduced_constraints\": " << presolve.reducedConstraints
+            << ", \"transformations\": " << presolve.transformationCount
+            << ", \"original_variables\": " << presolve.originalVariables
+            << ", \"original_constraints\": " << presolve.originalConstraints
+            << ", \"original_nonzeros\": " << presolve.originalNonzeros
+            << ", \"reduced_nonzeros\": " << presolve.reducedNonzeros
+            << ", \"transformations_by_type\": {"
+            << "\"remove_variable\": " << byType.removeVariable
+            << ", \"remove_constraint\": " << byType.removeConstraint
+            << ", \"fix_variable\": " << byType.fixVariable
+            << ", \"substitute_variable\": " << byType.substituteVariable
+            << ", \"tighten_lower_bound\": " << byType.tightenLowerBound
+            << ", \"tighten_upper_bound\": " << byType.tightenUpperBound << "}}";
+    } else {
+        out << "null";
+    }
+    out << ",\n";
+
+    // `invoked` is false when the answer was settled before dispatch()
+    // (presolve-proved infeasibility, an NLP refusal); `engine` and `reason`
+    // then describe that early exit exactly as termination does.
+    out << "  \"dispatch\": ";
+    if (report != nullptr) {
+        out << "{\"invoked\": ";
+        writeBool(out, report->dispatch.dispatcherInvoked);
+        out << ", \"engine\": ";
+        writeString(out, solver::toString(report->dispatch.engine));
+        out << ", \"reason\": ";
+        if (report->dispatch.reason.empty()) out << "null"; else writeString(out, report->dispatch.reason);
+        out << ", \"executed_engine\": ";
+        writeEngineOrNull(out, report->dispatch.executedEngine);
+        out << "}";
+    } else {
+        out << "null";
+    }
+    out << ",\n";
+
+    out << "  \"validation\": ";
+    if (report != nullptr) {
+        out << "{\"reduced_space\": ";
+        if (report->reducedValidation.has_value()) {
+            out << "{";
+            writeValidationFields(out, *report->reducedValidation);
+            out << ", \"engine_reported_objective\": ";
+            writeNumber(out, report->reducedValidation->engineReportedObjective);
+            out << "}";
+        } else {
+            out << "null";
+        }
+        out << ", \"original_space\": ";
+        if (report->postsolve.has_value()) {
+            out << "{";
+            writeValidationFields(out, *report->postsolve);
+            out << ", \"duals_requested\": ";
+            writeBool(out, report->postsolve->dualsRequested);
+            out << "}";
+        } else {
+            out << "null";
+        }
+        out << "}";
     } else {
         out << "null";
     }
@@ -458,10 +592,14 @@ bool writeJsonReport(std::ostream& out,
 
     // Solver-reported residuals. These are the SOLVER's claim about its own
     // answer; the harness recomputes all of them independently.
+    // Primal residuals are postsolve's original-space measurement, published
+    // only when that check passed over every bound and row.
+    const bool havePostsolveResiduals =
+        report != nullptr && report->postsolve.has_value() && report->postsolve->passed;
     out << "  \"self_reported\": {\"max_bound_residual\": ";
-    out << "null";  // residuals are recomputed independently by the checker
+    if (havePostsolveResiduals) writeNumber(out, report->postsolve->maxBoundResidual); else out << "null";
     out << ", \"max_constraint_residual\": ";
-    out << "null";
+    if (havePostsolveResiduals) writeNumber(out, report->postsolve->maxConstraintResidual); else out << "null";
     out << ", \"max_dual_residual\": ";
     if (result.hasDuals) {
         writeNumber(out, result.maxDualResidual);
@@ -470,18 +608,42 @@ bool writeJsonReport(std::ostream& out,
     }
     out << ", \"max_integrality_violation\": ";
     writeNumber(out, result.maxIntegralityViolation);
+    // The pipeline's own verdict (violation within its tolerance). Published
+    // so a consumer never re-derives it from the violation and a guessed
+    // tolerance; null when there is no point to judge.
+    out << ", \"integrality_respected\": ";
+    if (havePrimal) writeBool(out, result.integralityRespected); else out << "null";
     out << "},\n";
 
     // Stage breakdown. The process's end-to-end time lives in the run record
     // written by bench_runner; these are the parts of it the solver can see.
+    //   parse, solve   measured by the CLI around its own calls; "solve" is the
+    //                  whole solver::solve() call.
+    //   the rest       the SolveReport's disjoint in-pipeline stages, all inside
+    //                  "solve"; "total" equals work.solve_seconds.
+    // null means the stage did not run.
+    const solver::StageTimings noStages;
+    const solver::StageTimings& stages = report != nullptr ? report->stageSeconds : noStages;
     out << "  \"stage_seconds\": {\"parse\": ";
-    if (input.parseSeconds >= 0.0) { writeNumber(out, input.parseSeconds); } else { out << "null"; }
+    writeSeconds(out, input.parseSeconds);
     out << ", \"presolve\": ";
-    if (input.presolveSeconds >= 0.0) { writeNumber(out, input.presolveSeconds); } else { out << "null"; }
+    writeSeconds(out, stages.presolve);
     out << ", \"solve\": ";
-    if (input.solveSeconds >= 0.0) { writeNumber(out, input.solveSeconds); } else { out << "null"; }
+    writeSeconds(out, input.solveSeconds);
     out << ", \"postsolve\": ";
-    if (input.postsolveSeconds >= 0.0) { writeNumber(out, input.postsolveSeconds); } else { out << "null"; }
+    writeSeconds(out, stages.postsolve);
+    out << ", \"validation\": ";
+    writeSeconds(out, stages.validation);
+    out << ", \"classification\": ";
+    writeSeconds(out, stages.classification);
+    out << ", \"dispatch\": ";
+    writeSeconds(out, stages.dispatch);
+    out << ", \"engine\": ";
+    writeSeconds(out, stages.engine);
+    out << ", \"reduced_validation\": ";
+    writeSeconds(out, stages.reducedValidation);
+    out << ", \"total\": ";
+    writeSeconds(out, stages.total);
     out << "},\n";
 
     out << "  \"work\": {\"iterations\": ";

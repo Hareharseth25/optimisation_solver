@@ -1,0 +1,87 @@
+{
+ "httpStatus": 422,
+ "body": {
+  "outcome": "invalid_model",
+  "record": {
+   "schema": "optimsolver.solve.v1",
+   "instance": {
+    "path": "model.mps",
+    "sha256": "7791af2cd718b50d60566fa62e5b87208f4a18a196c67488d322f870be0f7205",
+    "variables": 1,
+    "constraints": 1,
+    "objective_sense": "min"
+   },
+   "solver": {
+    "name": "optimsolver",
+    "commit": "97c1474774bede37210821c62158296f904cdbb6",
+    "build_type": "Release"
+   },
+   "compute_backend": {
+    "requested": "auto",
+    "executed": null,
+    "requested_device": 0,
+    "executed_device": null,
+    "reason": "model failed structural validation"
+   },
+   "settings": {
+    "requested_engine": null,
+    "time_limit_seconds": null,
+    "tolerance": 1e-08,
+    "thread_count": 1
+   },
+   "classification": null,
+   "presolve": null,
+   "dispatch": null,
+   "validation": null,
+   "termination": {
+    "status": "invalid_model",
+    "message": "model failed structural validation",
+    "dispatched_engine": "unsupported",
+    "executed_engine": null,
+    "engine_reason": ""
+   },
+   "objective": null,
+   "dual_bound": null,
+   "mip_gap": null,
+   "primal": null,
+   "duals": null,
+   "reduced_costs": null,
+   "duals_unavailable_reason": "No dual solution is available.",
+   "self_reported": {
+    "max_bound_residual": null,
+    "max_constraint_residual": null,
+    "max_dual_residual": null,
+    "max_integrality_violation": 0,
+    "integrality_respected": null
+   },
+   "stage_seconds": {
+    "parse": 4.1541e-05,
+    "presolve": null,
+    "solve": null,
+    "postsolve": null,
+    "validation": null,
+    "classification": null,
+    "dispatch": null,
+    "engine": null,
+    "reduced_validation": null,
+    "total": null
+   },
+   "work": {
+    "iterations": null,
+    "nodes": null,
+    "solve_seconds": 0
+   },
+   "variable_names": [
+    "X"
+   ],
+   "constraint_names": [
+    "C1"
+   ]
+  },
+  "error": null,
+  "process": {
+   "exit_code": 1,
+   "wall_seconds": 0.003010416000000002
+  }
+ }
+}

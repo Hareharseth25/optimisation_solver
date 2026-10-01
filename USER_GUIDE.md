@@ -192,6 +192,7 @@ optimsolver solve <model.mps> [options]
 | `--output` | `<file>` | Write the reconstructed original-space solution vector and duals to a file. |
 | `--backend` | `auto`\|`cpu`\|`cuda` | Compute backend for the PDLP and QP engines (default `auto`). `cuda` needs a CUDA-enabled build and a usable GPU and fails with the reason otherwise -- it never silently runs on the CPU. See [docs/cuda.md](docs/cuda.md). |
 | `--cuda-device` | `<index>` | CUDA device used by `--backend cuda`/`auto` (default `0`). |
+| `--verbose` | — | After the result, print the full execution report: model statistics, presolve reductions, the dispatch decision, per-stage timings and validation residuals. |
 | `-h`, `--help` | — | Display help information and usage examples for the solve command. |
 
 ### Command Examples

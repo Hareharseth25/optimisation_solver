@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <iterator>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -38,15 +39,15 @@ void test_help_root() {
     std::string out, err;
     int code = runCli({"optimsolver", "--help"}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
-    assert(out.find("Mathematical Optimization Engine") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
+    assert(out.find("Kernel for Advanced Integer & Real Optimization") != std::string::npos);
     assert(out.find("Getting Started") != std::string::npos);
     assert(out.find("solve <model.mps>") != std::string::npos);
     assert(err.empty());
 
     code = runCli({"optimsolver", "-h"}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
     assert(out.find("Getting Started") != std::string::npos);
 
     std::cout << "[PASSED] test_help_root\n";
@@ -56,7 +57,7 @@ void test_help_solve() {
     std::string out, err;
     int code = runCli({"optimsolver", "solve", "--help"}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
     assert(out.find("Usage") != std::string::npos);
     assert(out.find("solve <model.mps>") != std::string::npos);
     assert(out.find("--solver") != std::string::npos);
@@ -66,7 +67,7 @@ void test_help_solve() {
 
     code = runCli({"optimsolver", "solve", "-h"}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
     assert(out.find("solve <model.mps>") != std::string::npos);
 
     std::cout << "[PASSED] test_help_solve\n";
@@ -76,8 +77,8 @@ void test_no_arguments() {
     std::string out, err;
     int code = runCli({"optimsolver"}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
-    assert(out.find("Mathematical Optimization Engine") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
+    assert(out.find("Kernel for Advanced Integer & Real Optimization") != std::string::npos);
     assert(out.find("MAIN MENU") != std::string::npos);
     assert(out.find("Open MPS Model") != std::string::npos);
     assert(err.empty());
@@ -91,7 +92,7 @@ void test_unknown_command() {
     assert(code != 0);
     assert(err.find("Unknown command 'inspect'") != std::string::npos);
     // Errors must remain clean and not print the giant mascot
-    assert(err.find("Mathematical Optimization Engine") == std::string::npos);
+    assert(err.find("Kernel for Advanced Integer & Real Optimization") == std::string::npos);
 
     std::cout << "[PASSED] test_unknown_command\n";
 }
@@ -101,7 +102,7 @@ void test_solve_missing_model_path() {
     int code = runCli({"optimsolver", "solve"}, out, err);
     assert(code != 0);
     assert(err.find("Missing required model path") != std::string::npos);
-    assert(err.find("Mathematical Optimization Engine") == std::string::npos);
+    assert(err.find("Kernel for Advanced Integer & Real Optimization") == std::string::npos);
 
     std::cout << "[PASSED] test_solve_missing_model_path\n";
 }
@@ -219,7 +220,7 @@ void test_solve_missing_model_file() {
     int code = runCli({"optimsolver", "solve", "non_existent_path_12345.mps"}, out, err);
     assert(code != 0);
     assert(err.find("Failed to read MPS file") != std::string::npos);
-    assert(err.find("Mathematical Optimization Engine") == std::string::npos);
+    assert(err.find("Kernel for Advanced Integer & Real Optimization") == std::string::npos);
 
     std::cout << "[PASSED] test_solve_missing_model_file\n";
 }
@@ -237,7 +238,7 @@ void test_solve_real_model_pipeline() {
     std::string out, err;
     int code = runCli({"optimsolver", "solve", mpsPath}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
     assert(out.find("Solving SIMPLE_LP") != std::string::npos);
     assert(out.find("Optimal") != std::string::npos);
     assert(out.find("Objective") != std::string::npos);
@@ -252,7 +253,7 @@ void test_solve_infeasible_model() {
     std::string out, err;
     int code = runCli({"optimsolver", "solve", mpsPath}, out, err);
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
     assert(out.find("Infeasible") != std::string::npos);
     assert(out.find("presolve proved the model infeasible") != std::string::npos ||
            out.find("Presolve proved the model infeasible") != std::string::npos);
@@ -514,8 +515,8 @@ void test_interactive_menu_exit() {
     std::string out, err;
     int code = runCli({"optimsolver"}, out, err, "5\n");
     assert(code == 0);
-    assert(out.find("OPTIMSOLVER") != std::string::npos);
-    assert(out.find("Exiting Optimisation Solver.") != std::string::npos);
+    assert(out.find("KAIRO") != std::string::npos);
+    assert(out.find("Exiting KAIRO.") != std::string::npos);
     assert(err.empty());
     std::cout << "[PASSED] test_interactive_menu_exit\n";
 }
@@ -672,6 +673,144 @@ void test_backend_report_serialization() {
     expect(refused.str().find("CUDA setup refused") != std::string::npos, "setup reason is retained");
 }
 
+// ---------------------------------------------------------------------------
+// SolveReport in the CLI: every value below comes from the report of the
+// solve that produced the output, so each check names an exact value.
+// ---------------------------------------------------------------------------
+
+bool has(const std::string& text, const std::string& needle) {
+    return text.find(needle) != std::string::npos;
+}
+
+void test_report_default_output() {
+    std::string out, err;
+    int code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/simple_lp.mps")}, out, err);
+    expect(code == 0 && err.empty(), "LP solves");
+    expect(has(out, "Class      LP · 2 continuous"), "LP classification shown");
+    expect(has(out, "Model      2 variables · 1 constraint · 2 nonzeros"), "original nonzeros shown");
+    expect(has(out, "Dispatch        small enough for the dual simplex (1 rows, 2 nonzeros)"),
+           "the dispatcher's own reason is shown");
+    expect(has(out, "Validation      passed · max bound violation 0 · max row violation 0"),
+           "original-space validation shown");
+    expect(!has(out, "\nDISPATCH\n") && !has(out, "\nEXECUTION\n"),
+           "the full report needs --verbose");
+
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/presolve_reduction.mps")}, out, err);
+    expect(code == 0, "presolve-reduction LP solves");
+    expect(has(out, "Model      3 variables · 1 constraint · 3 nonzeros") &&
+           has(out, "Reduced    2 variables · 1 constraint · 2 nonzeros"),
+           "presolve reduction shown with nonzeros");
+
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/knapsack_milp.mps")}, out, err);
+    expect(code == 0, "MILP solves");
+    expect(has(out, "Class      MILP · 3 binary"), "MILP classification shown");
+    expect(has(out, "Engine     branch_and_cut"), "MILP runs branch-and-cut");
+    expect(has(out, "Objective       7"), "knapsack optimum is 7");
+    expect(has(out, "Dispatch        integer variables survive presolve"), "MILP dispatch reason");
+    expect(has(out, "Validation      passed"), "MILP validated");
+
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/convex_qp.mps")}, out, err);
+    expect(code == 0, "QP solves");
+    expect(has(out, "Class      QP · 2 continuous") && has(out, "Engine     qp"), "QP routed to qp");
+    expect(has(out, "Objective       -4.5"), "QP optimum is -4.5");
+    expect(has(out, "Dispatch        convex quadratic"), "QP dispatch reason");
+
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/simple_lp.mps"),
+                   "--solver", "pdlp"}, out, err);
+    expect(code == 0 && has(out, "Engine     pdlp") &&
+           has(out, "Dispatch        engine forced by the caller"), "forced engine and its reason");
+
+    // Presolve settled it: no dispatcher ran, so no dispatch or validation line.
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/mps/test_cases/01_basic_lp.mps")}, out, err);
+    expect(code == 0 && has(out, "Infeasible"), "presolve-infeasible model reported");
+    expect(!has(out, "Dispatch        ") && !has(out, "Validation      "),
+           "no dispatch or validation line when neither ran");
+    std::cout << "[PASSED] test_report_default_output\n";
+}
+
+void test_report_verbose_output() {
+    std::string out, err;
+    int code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/presolve_reduction.mps"),
+                       "--verbose"}, out, err);
+    expect(code == 0, "verbose LP solves");
+    for (const char* heading : {"\nMODEL\n", "\nPRESOLVE\n", "\nDISPATCH\n", "\nEXECUTION\n", "\nVALIDATION\n"}) {
+        expect(has(out, heading), std::string("verbose prints section ") + heading);
+    }
+    expect(has(out, "Variables         3  (3 continuous, 0 integer, 0 binary)"), "model counts");
+    expect(has(out, "Objective         minimize · 3 linear terms · 0 quadratic terms"), "objective info");
+    expect(has(out, "Variables         3 → 2") && has(out, "Nonzeros          3 → 2"), "presolve arrows");
+    expect(has(out, "State             converged"), "presolve state");
+    expect(has(out, "Transformations   1  (1 fix variable)"), "transformation counts");
+    expect(has(out, "Dispatcher        invoked") && has(out, "Selected          dual_simplex") &&
+           has(out, "Executed          dual_simplex"), "dispatch section");
+    expect(has(out, "Backend           cpu"), "executed backend");
+    expect(has(out, "Total             ") && !has(out, "not run"), "every stage ran and was timed");
+    expect(has(out, "Reduced space     passed") && has(out, "Original space    passed"),
+           "both validation passes reported");
+    expect(has(out, "objective 28 (engine reported 28)"), "engine objective vs recomputed");
+    expect(has(out, "Duals             max dual residual"), "dual residual reported");
+
+    // Presolve-infeasible: later stages are "not run", never zero.
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/mps/test_cases/01_basic_lp.mps"),
+                   "--verbose"}, out, err);
+    expect(code == 0, "verbose infeasible runs");
+    expect(has(out, "State             proved infeasible"), "presolve proved infeasibility");
+    expect(has(out, "Dispatcher        not invoked") && has(out, "Outcome           infeasible") &&
+           has(out, "Executed          none"), "dispatcher not invoked");
+    expect(has(out, "Dispatch          not run") && has(out, "Engine            not run") &&
+           has(out, "Postsolve         not run"), "skipped stages marked");
+    expect(has(out, "Presolve          0.") && !has(out, "Presolve          not run"), "presolve timed");
+    expect(has(out, "Backend           none (no engine ran)"), "no backend claimed");
+    expect(has(out, "Original space    not run"), "no validation claimed");
+
+    // Unsupported: the dispatcher ran and refused; nothing executed.
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/nonconvex_qp.mps"),
+                   "--verbose"}, out, err);
+    expect(code == 1 && has(err, "Unsupported problem"), "non-convex QP refused");
+    expect(has(out, "Dispatcher        invoked") && has(out, "Selected          unsupported") &&
+           has(out, "Executed          none") && has(out, "Engine            not run"),
+           "unsupported dispatch reported accurately");
+
+    // Time limit: the engine ran, its iterate failed reduced-space validation,
+    // and postsolve never ran.
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/simple_lp.mps"),
+                   "--solver", "pdlp", "--time-limit", "1e-30", "--verbose"}, out, err);
+    expect(code == 0 && has(out, "Limit Reached"), "limit reached");
+    expect(has(out, "Executed          pdlp") && !has(out, "Engine            not run"),
+           "the engine ran");
+    expect(has(out, "Reduced space     failed (constraint_violation)"),
+           "the rejected iterate is reported as a failed check");
+    expect(has(out, "Original space    not run") && has(out, "Postsolve         not run"),
+           "postsolve never ran");
+    std::cout << "[PASSED] test_report_verbose_output\n";
+}
+
+void test_report_invalid_model_and_options() {
+    const char* argv[] = {"optimsolver", "solve", "m.mps", "--verbose"};
+    auto res = cli::ArgumentParser::parse(4, argv);
+    expect(res.success && res.solveOptions.verbose, "--verbose parses");
+    std::string out, err;
+    int code = runCli({"optimsolver", "solve", "--help"}, out, err);
+    expect(code == 0 && has(out, "--verbose"), "solve --help documents --verbose");
+    code = runCli({"optimsolver", "solve", "model.nlp", "--verbose"}, out, err);
+    expect(code == 1 && has(err, "--verbose"), "--verbose is refused for NLP");
+
+    const std::string jsonPath = "test_cli_invalid_model.json";
+    std::remove(jsonPath.c_str());
+    code = runCli({"optimsolver", "solve", getTestModelPath("tests/cli/invalid_bounds.mps"),
+                   "--json", jsonPath}, out, err);
+    expect(code == 1 && has(err, "Invalid model"), "invalid model refused");
+    std::ifstream file(jsonPath);
+    expect(file.is_open(), "invalid model still writes a JSON record");
+    const std::string json((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+    std::remove(jsonPath.c_str());
+    expect(has(json, "\"status\": \"invalid_model\"") && has(json, "\"classification\": null") &&
+           has(json, "\"presolve\": null") && has(json, "\"dispatch\": null") &&
+           has(json, "\"validation\": null"), "refusal record has no stage sections");
+    std::cout << "[PASSED] test_report_invalid_model_and_options\n";
+}
+
 }  // namespace
 
 int main() {
@@ -707,6 +846,9 @@ int main() {
     test_backend_report_serialization();
     test_backend_option_parsing();
     test_backend_selection_reported();
+    test_report_default_output();
+    test_report_verbose_output();
+    test_report_invalid_model_and_options();
 
     std::cout << "All CLI tests passed successfully!\n";
     return 0;

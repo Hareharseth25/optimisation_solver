@@ -1,0 +1,159 @@
+{
+ "httpStatus": 200,
+ "body": {
+  "outcome": "completed",
+  "record": {
+   "schema": "optimsolver.solve.v1",
+   "instance": {
+    "path": "model.mps",
+    "sha256": "5ec4086455a1ba507b222842a94201f249ae81c77d2bbb971c50898364fda0cb",
+    "variables": 3,
+    "constraints": 1,
+    "objective_sense": "min"
+   },
+   "solver": {
+    "name": "optimsolver",
+    "commit": "97c1474774bede37210821c62158296f904cdbb6",
+    "build_type": "Release"
+   },
+   "compute_backend": {
+    "requested": "auto",
+    "executed": "cpu",
+    "requested_device": 0,
+    "executed_device": null,
+    "reason": "engine executed on cpu"
+   },
+   "settings": {
+    "requested_engine": null,
+    "time_limit_seconds": null,
+    "tolerance": 1e-08,
+    "thread_count": 1
+   },
+   "classification": {
+    "problem_class": "LP",
+    "num_binary": 0,
+    "num_integer": 0,
+    "num_continuous": 3,
+    "nonzeros": 3,
+    "coef_range_ratio": 1,
+    "num_rows": 1,
+    "num_columns": 3,
+    "has_network_structure": false,
+    "has_big_m": false,
+    "max_big_m": 0,
+    "has_set_partitioning": false,
+    "symmetric_groups": 0
+   },
+   "presolve": {
+    "infeasible": false,
+    "converged": true,
+    "reduced_variables": 2,
+    "reduced_constraints": 1,
+    "transformations": 1,
+    "original_variables": 3,
+    "original_constraints": 1,
+    "original_nonzeros": 3,
+    "reduced_nonzeros": 2,
+    "transformations_by_type": {
+     "remove_variable": 0,
+     "remove_constraint": 0,
+     "fix_variable": 1,
+     "substitute_variable": 0,
+     "tighten_lower_bound": 0,
+     "tighten_upper_bound": 0
+    }
+   },
+   "dispatch": {
+    "invoked": true,
+    "engine": "dual_simplex",
+    "reason": "small enough for the dual simplex (1 rows, 2 nonzeros); it terminates at an exact vertex",
+    "executed_engine": "dual_simplex"
+   },
+   "validation": {
+    "reduced_space": {
+     "passed": true,
+     "status": "success",
+     "failure": null,
+     "max_bound_residual": 0,
+     "max_constraint_residual": 0,
+     "max_bound_residual_scaled": 0,
+     "max_constraint_residual_scaled": 0,
+     "objective": 28,
+     "engine_reported_objective": 28
+    },
+    "original_space": {
+     "passed": true,
+     "status": "success",
+     "failure": null,
+     "max_bound_residual": 0,
+     "max_constraint_residual": 0,
+     "max_bound_residual_scaled": 0,
+     "max_constraint_residual_scaled": 0,
+     "objective": 28,
+     "duals_requested": true
+    }
+   },
+   "termination": {
+    "status": "optimal",
+    "message": "dual simplex",
+    "dispatched_engine": "dual_simplex",
+    "executed_engine": "dual_simplex",
+    "engine_reason": "small enough for the dual simplex (1 rows, 2 nonzeros); it terminates at an exact vertex"
+   },
+   "objective": 28,
+   "dual_bound": null,
+   "mip_gap": null,
+   "primal": [
+    4,
+    0,
+    5
+   ],
+   "duals": [
+    2
+   ],
+   "reduced_costs": [
+    0,
+    1,
+    2
+   ],
+   "duals_unavailable_reason": null,
+   "self_reported": {
+    "max_bound_residual": 0,
+    "max_constraint_residual": 0,
+    "max_dual_residual": 0,
+    "max_integrality_violation": 0,
+    "integrality_respected": true
+   },
+   "stage_seconds": {
+    "parse": 0.000232709,
+    "presolve": 5.95e-05,
+    "solve": 0.000317459,
+    "postsolve": 1.917e-06,
+    "validation": 1.042e-06,
+    "classification": 3.5334e-05,
+    "dispatch": 7.5e-07,
+    "engine": 0.000126209,
+    "reduced_validation": 3.325e-05,
+    "total": 0.000258917
+   },
+   "work": {
+    "iterations": 1,
+    "nodes": null,
+    "solve_seconds": 0.000258917
+   },
+   "variable_names": [
+    "X1",
+    "X2",
+    "X3"
+   ],
+   "constraint_names": [
+    "C1"
+   ]
+  },
+  "error": null,
+  "process": {
+   "exit_code": 0,
+   "wall_seconds": 0.016105916999999997
+  }
+ }
+}

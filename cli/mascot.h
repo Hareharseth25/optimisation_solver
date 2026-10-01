@@ -64,6 +64,12 @@ struct SolveDashboardInfo {
     std::size_t reducedCons = 0;
     bool presolveInfeasible = false;
     std::string engineName;
+
+    // From the SolveReport of the same solve. Empty / negative when the
+    // corresponding stage did not run, in which case the line is omitted.
+    std::string classification;
+    std::int64_t originalNonzeros = -1;
+    std::int64_t reducedNonzeros = -1;
 };
 
 void printSolveDashboard(std::ostream& out, const SolveDashboardInfo& info, const TerminalStyle& style);

@@ -1,6 +1,13 @@
 #pragma once
 
-// Machine-readable record of one solve, for the benchmark harness.
+// Machine-readable record of one solve: optimsolver.solve.v1.
+//
+// This is the serialization contract for every consumer of solver runs -- the
+// benchmark harness and, later, KAIRO Explorer (see docs/architecture.md,
+// "KAIRO Explorer Integration Boundary"). Built as its own target,
+// solve_report_json, so a consumer does not link the terminal application.
+// The writer is a pure mapping of the SolveResult and SolveReport it is
+// given; it never classifies, presolves, dispatches or validates.
 //
 // This is deliberately a separate output path from the dashboard and from
 // --output. The dashboard is for a person, --output is a solution listing, and
@@ -17,10 +24,9 @@
 // zero" are different facts, and a checker must be able to tell them apart.
 
 #include "model/model.h"
-#include "presolve/presolve_result.h"
-#include "solver/classifier.h"
-#include "solver/solve_result.h"
 #include "solver/nlp.h"
+#include "solver/solve_report.h"
+#include "solver/solve_result.h"
 
 #include <iosfwd>
 #include <string>
@@ -42,19 +48,21 @@ struct JsonReportInput {
     std::size_t originalVariables = 0;
     std::size_t originalConstraints = 0;
 
-    const solver::Classification* classification = nullptr;
-    const presolve::PresolveResult* presolve = nullptr;
+    // How the solve ran: classification, presolve summary, dispatch,
+    // validation residuals and in-pipeline stage timings. Filled by the SAME
+    // solver::solve() call whose SolveResult is being written; null when no
+    // solve ran (the model was refused before the solver was called), in
+    // which case every section it feeds is written as null.
+    const solver::SolveReport* report = nullptr;
 
     const model::Model* originalModel = nullptr;
 
-    // Wall-clock seconds per stage, measured by the CLI around each call.
-    // Reported separately from the process's end-to-end time so a slow run can
-    // be attributed: a parse that dominates and an engine that dominates are
-    // different problems with different fixes. Negative means "not run".
+    // Wall-clock seconds measured by the CLI around its own calls. Reported
+    // separately from the process's end-to-end time so a slow run can be
+    // attributed. Negative means "not run". The finer in-pipeline stages come
+    // from `report`.
     double parseSeconds = -1.0;
-    double presolveSeconds = -1.0;
-    double solveSeconds = -1.0;      // orchestrator: dispatch + engine
-    double postsolveSeconds = -1.0;
+    double solveSeconds = -1.0;      // the whole solver::solve() call
 
     int threadCount = 0;
 };

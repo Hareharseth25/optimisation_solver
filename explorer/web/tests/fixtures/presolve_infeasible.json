@@ -1,0 +1,130 @@
+{
+ "httpStatus": 200,
+ "body": {
+  "outcome": "completed",
+  "record": {
+   "schema": "optimsolver.solve.v1",
+   "instance": {
+    "path": "model.mps",
+    "sha256": "a55ff2053e98a6dff10181b5b6205c02be7be103597cc1edb86fac000a69b0b6",
+    "variables": 2,
+    "constraints": 3,
+    "objective_sense": "min"
+   },
+   "solver": {
+    "name": "optimsolver",
+    "commit": "97c1474774bede37210821c62158296f904cdbb6",
+    "build_type": "Release"
+   },
+   "compute_backend": {
+    "requested": "auto",
+    "executed": null,
+    "requested_device": 0,
+    "executed_device": null,
+    "reason": "presolve proved the model infeasible"
+   },
+   "settings": {
+    "requested_engine": null,
+    "time_limit_seconds": null,
+    "tolerance": 1e-08,
+    "thread_count": 1
+   },
+   "classification": {
+    "problem_class": "LP",
+    "num_binary": 0,
+    "num_integer": 0,
+    "num_continuous": 2,
+    "nonzeros": 4,
+    "coef_range_ratio": 2,
+    "num_rows": 3,
+    "num_columns": 2,
+    "has_network_structure": false,
+    "has_big_m": false,
+    "max_big_m": 0,
+    "has_set_partitioning": false,
+    "symmetric_groups": 0
+   },
+   "presolve": {
+    "infeasible": true,
+    "converged": true,
+    "reduced_variables": 2,
+    "reduced_constraints": 1,
+    "transformations": 5,
+    "original_variables": 2,
+    "original_constraints": 3,
+    "original_nonzeros": 4,
+    "reduced_nonzeros": 2,
+    "transformations_by_type": {
+     "remove_variable": 0,
+     "remove_constraint": 2,
+     "fix_variable": 0,
+     "substitute_variable": 0,
+     "tighten_lower_bound": 2,
+     "tighten_upper_bound": 1
+    }
+   },
+   "dispatch": {
+    "invoked": false,
+    "engine": "infeasible",
+    "reason": "presolve proved the model infeasible",
+    "executed_engine": null
+   },
+   "validation": {
+    "reduced_space": null,
+    "original_space": null
+   },
+   "termination": {
+    "status": "infeasible",
+    "message": "presolve proved the model infeasible",
+    "dispatched_engine": "infeasible",
+    "executed_engine": null,
+    "engine_reason": "presolve proved the model infeasible"
+   },
+   "objective": null,
+   "dual_bound": null,
+   "mip_gap": null,
+   "primal": null,
+   "duals": null,
+   "reduced_costs": null,
+   "duals_unavailable_reason": "No dual solution is available.",
+   "self_reported": {
+    "max_bound_residual": null,
+    "max_constraint_residual": null,
+    "max_dual_residual": null,
+    "max_integrality_violation": 0,
+    "integrality_respected": null
+   },
+   "stage_seconds": {
+    "parse": 7.2084e-05,
+    "presolve": 4.833e-06,
+    "solve": 1.2334e-05,
+    "postsolve": null,
+    "validation": 5.84e-07,
+    "classification": 4.25e-06,
+    "dispatch": null,
+    "engine": null,
+    "reduced_validation": null,
+    "total": 9.792e-06
+   },
+   "work": {
+    "iterations": null,
+    "nodes": null,
+    "solve_seconds": 9.792e-06
+   },
+   "variable_names": [
+    "X1",
+    "X2"
+   ],
+   "constraint_names": [
+    "C_LESS",
+    "C_GREATER",
+    "C_EQUAL"
+   ]
+  },
+  "error": null,
+  "process": {
+   "exit_code": 0,
+   "wall_seconds": 0.003995749999999999
+  }
+ }
+}

@@ -17,6 +17,8 @@
 #include <chrono>
 #include <stdexcept>
 #include <cmath>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -27,6 +29,71 @@ using Clock = std::chrono::steady_clock;
 
 double secondsSince(const Clock::time_point& start) {
     return std::chrono::duration<double>(Clock::now() - start).count();
+}
+
+// Charges `seconds` to one report stage. A stage can be entered more than once
+// (validation runs on the input model and again on the reduced model), so
+// time accumulates; negative is the "never ran" sentinel.
+void addStage(SolveReport* report, double StageTimings::*stage, double seconds) {
+    if (report == nullptr) return;
+    double& slot = report->stageSeconds.*stage;
+    slot = slot < 0.0 ? seconds : slot + seconds;
+}
+
+// Records one validation pass exactly as the pipeline judged it.
+void recordValidation(ValidationSummary& summary, bool passed,
+                      postsolve::PostsolveStatus status,
+                      const postsolve::PostsolveResult& checked,
+                      double objective, const std::string& failure) {
+    summary.passed = passed;
+    summary.status = status;
+    if (!passed) {
+        summary.failure = failure;
+        return;
+    }
+    summary.maxBoundResidual = checked.maxBoundResidual;
+    summary.maxConstraintResidual = checked.maxConstraintResidual;
+    summary.maxBoundResidualScaled = checked.maxBoundResidualScaled;
+    summary.maxConstraintResidualScaled = checked.maxConstraintResidualScaled;
+    summary.objectiveValue = objective;
+}
+
+// Summarises the PresolveResult the pipeline actually used. Called after the
+// solve's clock has stopped, so the nonzero counting is not charged to it.
+PresolveSummary summarisePresolve(const model::Model& original,
+                                  const presolve::PresolveResult& presolved) {
+    PresolveSummary summary;
+    summary.infeasible = presolved.infeasible;
+    summary.converged = presolved.converged;
+    summary.originalVariables = presolved.originalVariables;
+    summary.originalConstraints = presolved.originalConstraints;
+    summary.reducedVariables = presolved.presolvedVariables;
+    summary.reducedConstraints = presolved.presolvedConstraints;
+    summary.originalNonzeros = countNonzeros(original);
+    summary.reducedNonzeros = countNonzeros(presolved.model);
+    summary.transformationCount = presolved.transformations.size();
+    auto& byType = summary.transformationsByType;
+    for (const auto& transformation : presolved.transformations) {
+        switch (transformation.type) {
+            case presolve::TransformationType::RemoveVariable:     ++byType.removeVariable; break;
+            case presolve::TransformationType::RemoveConstraint:   ++byType.removeConstraint; break;
+            case presolve::TransformationType::FixVariable:        ++byType.fixVariable; break;
+            case presolve::TransformationType::SubstituteVariable: ++byType.substituteVariable; break;
+            case presolve::TransformationType::TightenLowerBound:  ++byType.tightenLowerBound; break;
+            case presolve::TransformationType::TightenUpperBound:  ++byType.tightenUpperBound; break;
+        }
+    }
+    return summary;
+}
+
+// Copies the final provenance and total time out of the result, so the
+// report's dispatch section and total agree with SolveResult by construction.
+void finishReport(SolveReport* report, const SolveResult& result) {
+    if (report == nullptr) return;
+    report->dispatch.engine = result.engine;
+    report->dispatch.reason = result.engineReason;
+    report->dispatch.executedEngine = result.executedEngine;
+    report->stageSeconds.total = result.solveSeconds;
 }
 
 SolveStatus normalise(pdlp::PdlpStatus status) noexcept {
@@ -123,7 +190,8 @@ double integralityViolation(const model::Model& model,
 // Restore original coordinates exactly once, using the actual presolve log.
 SolveResult reconstructResult(const model::Model& original,
                               const presolve::PresolveResult& presolved,
-                              SolveResult result, const SolverOptions& options) {
+                              SolveResult result, const SolverOptions& options,
+                              std::optional<PostsolveSummary>* summary = nullptr) {
     const auto clearSolution = [&]() {
         result.hasPrimal = false;
         result.variableValues.clear();
@@ -166,10 +234,18 @@ SolveResult reconstructResult(const model::Model& original,
     auto post = wantDuals
         ? postsolver.process(*validationModel, presolved, result.variableValues, result.constraintDuals)
         : postsolver.process(*validationModel, presolved, result.variableValues);
-    if (!post.isSuccess() || !std::isfinite(post.originalObjectiveValue)) {
+    const bool accepted = post.isSuccess() && std::isfinite(post.originalObjectiveValue);
+    const std::string failure = post.isSuccess()
+        ? std::string("Non-finite original objective.") : post.errorMessage;
+    if (summary != nullptr) {
+        auto& recorded = summary->emplace();
+        recorded.dualsRequested = wantDuals;
+        recordValidation(recorded, accepted, post.status, post,
+                         post.originalObjectiveValue, failure);
+    }
+    if (!accepted) {
         if (result.status == SolveStatus::Optimal) result.status = SolveStatus::NumericalFailure;
-        result.message += "; postsolve: " + (post.isSuccess()
-            ? std::string("Non-finite original objective.") : post.errorMessage);
+        result.message += "; postsolve: " + failure;
         clearSolution();
         result.dualsUnavailableReason = "No valid primal solution is available.";
         return result;
@@ -194,7 +270,8 @@ SolveResult reconstructResult(const model::Model& original,
 // Validate engine output in the supplied coordinates. No identity mapping or
 // transformation replay is needed: row duals already refer to this model.
 SolveResult normalizeReducedResult(const model::Model& model, SolveResult result,
-                                   const SolverOptions& options) {
+                                   const SolverOptions& options,
+                                   std::optional<ReducedValidationSummary>* summary = nullptr) {
     const auto clearSolution = [&]() {
         result.hasPrimal = false;
         result.variableValues.clear();
@@ -233,10 +310,19 @@ SolveResult normalizeReducedResult(const model::Model& model, SolveResult result
     postsolve::PostsolveResult checked;
     const bool valid = validator.validateSolution(*validationModel, result.variableValues, checked);
     const double objective = valid ? validator.evaluateObjective(model, result.variableValues) : 0.0;
-    if (!valid || !std::isfinite(objective)) {
+    const bool accepted = valid && std::isfinite(objective);
+    const std::string failure = valid ? std::string("Non-finite objective.") : checked.errorMessage;
+    if (summary != nullptr) {
+        auto& recorded = summary->emplace();
+        recorded.engineReportedObjective = result.objectiveValue;
+        // validateSolution leaves `checked.status` untouched on success.
+        recordValidation(recorded, accepted,
+                         valid ? postsolve::PostsolveStatus::Success : checked.status,
+                         checked, objective, failure);
+    }
+    if (!accepted) {
         if (result.status == SolveStatus::Optimal) result.status = SolveStatus::NumericalFailure;
-        result.message += "; engine result: " + (valid
-            ? std::string("Non-finite objective.") : checked.errorMessage);
+        result.message += "; engine result: " + failure;
         clearSolution();
         result.dualsUnavailableReason = "No valid primal solution is available.";
         return result;
@@ -725,13 +811,21 @@ const char* toString(SolveStatus value) noexcept {
     return "unknown";
 }
 
-SolveResult solveReduced(const model::Model& presolvedModel,
-                         const Classification& classification,
-                         const SolverOptions& options) {
+namespace {
+
+// Dispatch, the engine and reduced-space validation: the part of the pipeline
+// solve() and solveReduced() share. Writes only its own report sections and
+// stages; the callers own the rest of the report.
+SolveResult runReducedPipeline(const model::Model& presolvedModel,
+                               const Classification& classification,
+                               const SolverOptions& options,
+                               SolveReport* report) {
     const Clock::time_point start = Clock::now();
     SolveResult result;
 
-    if (!presolvedModel.validate()) {
+    const bool valid = presolvedModel.validate();
+    addStage(report, &StageTimings::validation, secondsSince(start));
+    if (!valid) {
         result.status = SolveStatus::InvalidModel;
         result.message = "model failed structural validation";
         result.solveSeconds = secondsSince(start);
@@ -741,13 +835,19 @@ SolveResult solveReduced(const model::Model& presolvedModel,
     presolve::PresolveResult presolved;
     presolved.model = presolvedModel;
 
+    Clock::time_point stageStart = Clock::now();
     const DispatchDecision decision =
         dispatch(presolvedModel, classification, presolved, options);
+    addStage(report, &StageTimings::dispatch, secondsSince(stageStart));
+    if (report != nullptr) report->dispatch.dispatcherInvoked = true;
     result.engine = decision.engine;
     result.engineReason = decision.reason;
 
+    stageStart = Clock::now();
+    bool enginePathEntered = true;
     switch (decision.engine) {
         case Engine::Infeasible:
+            enginePathEntered = false;
             result.status = SolveStatus::Infeasible;
             result.message = decision.reason;
             break;
@@ -758,6 +858,7 @@ SolveResult solveReduced(const model::Model& presolvedModel,
 
         case Engine::Nlp: // Defensive: affine dispatcher rejects this engine.
         case Engine::Unsupported:
+            enginePathEntered = false;
             result.status = SolveStatus::Unsupported;
             result.message = decision.reason;
             break;
@@ -786,6 +887,9 @@ SolveResult solveReduced(const model::Model& presolvedModel,
             result = runPdlp(presolvedModel, options, std::move(result));
             break;
     }
+    if (enginePathEntered) {
+        addStage(report, &StageTimings::engine, secondsSince(stageStart));
+    }
 
     // Engines without a CUDA backend run on the CPU whatever was requested; say
     // so rather than leave a CUDA request looking honoured.
@@ -799,19 +903,44 @@ SolveResult solveReduced(const model::Model& presolvedModel,
 
     result.reducedVariableCount = presolvedModel.variables.size();
     result.reducedConstraintCount = presolvedModel.constraints.size();
-    result = normalizeReducedResult(presolvedModel, std::move(result), options);
+    stageStart = Clock::now();
+    result = normalizeReducedResult(presolvedModel, std::move(result), options,
+                                    report != nullptr ? &report->reducedValidation : nullptr);
+    if (report != nullptr && report->reducedValidation.has_value()) {
+        addStage(report, &StageTimings::reducedValidation, secondsSince(stageStart));
+    }
     result.solveSeconds = secondsSince(start);
     return result;
 }
 
-SolveResult solve(const model::Model& model, const SolverOptions& options) {
+}  // namespace
+
+SolveResult solveReduced(const model::Model& presolvedModel,
+                         const Classification& classification,
+                         const SolverOptions& options,
+                         SolveReport* report) {
+    if (report != nullptr) {
+        *report = SolveReport{};
+        report->classification = classification;
+    }
+    SolveResult result = runReducedPipeline(presolvedModel, classification, options, report);
+    finishReport(report, result);
+    return result;
+}
+
+SolveResult solve(const model::Model& model, const SolverOptions& options,
+                  SolveReport* report) {
+    if (report != nullptr) *report = SolveReport{};
     const Clock::time_point start = Clock::now();
     SolveResult result;
 
-    if (!model.validate()) {
+    const bool valid = model.validate();
+    addStage(report, &StageTimings::validation, secondsSince(start));
+    if (!valid) {
         result.status = SolveStatus::InvalidModel;
         result.message = "model failed structural validation";
         result.solveSeconds = secondsSince(start);
+        finishReport(report, result);
         return result;
     }
 
@@ -820,15 +949,21 @@ SolveResult solve(const model::Model& model, const SolverOptions& options) {
         result.message = "NLP requires nlp::Problem and an explicit initial point (CLI: solve model.nlp)";
         result.engineReason = result.message;
         result.solveSeconds = secondsSince(start);
+        finishReport(report, result);
         return result;
     }
 
     // 1. Classify the ORIGINAL model. Presolve's reductions depend on the class.
+    Clock::time_point stageStart = Clock::now();
     const Classification classification = classify(model);
+    addStage(report, &StageTimings::classification, secondsSince(stageStart));
+    if (report != nullptr) report->classification = classification;
 
     // 2. Presolve ONCE.
+    stageStart = Clock::now();
     presolve::Presolver presolver;
     const presolve::PresolveResult presolved = presolver.run(model);
+    addStage(report, &StageTimings::presolve, secondsSince(stageStart));
 
     if (presolved.infeasible) {
         result.status = SolveStatus::Infeasible;
@@ -839,14 +974,24 @@ SolveResult solve(const model::Model& model, const SolverOptions& options) {
         result.reducedVariableCount = presolved.model.variables.size();
         result.reducedConstraintCount = presolved.model.constraints.size();
         result.solveSeconds = secondsSince(start);
+        if (report != nullptr) report->presolve = summarisePresolve(model, presolved);
+        finishReport(report, result);
         return result;
     }
 
     // 3. Dispatch and validate in reduced coordinates, without postsolve.
-    result = solveReduced(presolved.model, classification, options);
+    result = runReducedPipeline(presolved.model, classification, options, report);
     // Do not skip empty vectors: presolve may have eliminated every variable.
-    result = reconstructResult(model, presolved, std::move(result), options);
+    stageStart = Clock::now();
+    result = reconstructResult(model, presolved, std::move(result), options,
+                               report != nullptr ? &report->postsolve : nullptr);
+    if (report != nullptr && report->postsolve.has_value()) {
+        addStage(report, &StageTimings::postsolve, secondsSince(stageStart));
+    }
     result.solveSeconds = secondsSince(start);
+    // Summarised from the same PresolveResult, after the clock stopped.
+    if (report != nullptr) report->presolve = summarisePresolve(model, presolved);
+    finishReport(report, result);
     return result;
 }
 
