@@ -32,6 +32,10 @@ CASES = {
     # Selected but not executed: an explicit CUDA request on a build without
     # CUDA. Regenerate on a non-CUDA build (the default configuration).
     "cuda_refused": ("tests/cli/simple_lp.mps", {"engine": "pdlp", "backend": "cuda"}),
+    "miqp_optimal": ("tests/mps/test_cases/20_miqp.mps", {}),
+    "structured_milp": ("tests/cli/structured_milp.mps", {}),
+    "network_flow": ("tests/cli/network_flow_lp.mps", {}),
+    "no_constraints": ("tests/cli/no_constraints_lp.mps", {}),
 }
 
 

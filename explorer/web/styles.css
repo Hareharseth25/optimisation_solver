@@ -405,3 +405,29 @@ tbody th { font-weight: 500; }
 .panel-title:focus { outline: none; }
 .panel-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
+
+/* ---------------------------------------------------------------- analysis */
+
+.panel-question { margin: -6px 0 12px; font-size: 12.5px; color: var(--muted); }
+.analysis-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.analysis-head .class-tag { margin-bottom: 0; }
+.analysis-sense { font-weight: 600; }
+.analysis-figures { margin-bottom: 12px; }
+.composition { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; margin-bottom: 14px; }
+.composition-label { color: var(--muted); margin-right: 4px; }
+.structure { padding-top: 12px; border-top: 1px solid var(--border); }
+
+.impact-state { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.impact-heading { margin: 0 0 6px; font-size: 13px; }
+.impact td, .impact thead th { text-align: right; }
+.impact thead th:first-child, .impact tbody th { text-align: left; }
+.impact-transformations { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.transformation-types { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.transformation-types li {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.transformation-types code { font-family: var(--mono); }

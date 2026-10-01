@@ -7,6 +7,7 @@
 import { h } from './vdom.js';
 import * as f from './format.js';
 import { buildPipeline, renderPipeline } from './pipeline.js';
+import { buildModelAnalysis, buildPresolveImpact, renderModelAnalysis, renderPresolveImpact } from './analysis.js';
 
 // ---------------------------------------------------------------------------
 // Small building blocks
@@ -382,8 +383,12 @@ export function renderResult(result, context = {}) {
   if (!record) return h('div', { class: 'result', 'data-view': 'result' }, banner);
   return h('div', { class: 'result', 'data-view': 'result' },
     banner,
-    // "What happened?" first; the sections below are the evidence.
+    // "What happened?" first, then what KAIRO received and what presolve
+    // changed; the sections below are the evidence.
     renderPipeline(buildPipeline(record)),
+    h('div', { class: 'grid analysis-row' },
+      renderModelAnalysis(buildModelAnalysis(record)),
+      renderPresolveImpact(buildPresolveImpact(record))),
     runSection(record, context),
     h('div', { class: 'grid' },
       modelSection(record),

@@ -160,7 +160,7 @@ async function main() {
       await load();
       const { root } = await send('DOM.getDocument', {});
       const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#model-file' });
-      await send('DOM.setFileInputFiles', { nodeId, files: [path.join(ROOT, file)] });
+      await send('DOM.setFileInputFiles', { nodeId, files: [path.isAbsolute(file) ? file : path.join(ROOT, file)] });
       await waitFor(`document.getElementById('model-state').dataset.state === 'ready'`, `${name} file ready`);
       const fileState = await evaluate(`document.getElementById('model-state').textContent`);
       check(fileState.startsWith(path.basename(file)) && fileState.endsWith('ready'), `${name}: file state "${fileState}"`);
@@ -190,6 +190,19 @@ async function main() {
                    .map((li) => li.dataset.stageId + ':' + li.dataset.stageState).join(' '),
                  terminal: document.querySelector('.stage-terminal')?.dataset.stageId ?? null,
                  pipelineSummary: t('[data-field=pipeline-summary]'),
+                 analysisClass: t('[data-field=analysis-class]'),
+                 analysisSense: t('[data-field=analysis-sense]'),
+                 analysisVariables: t('[data-field=analysis-variables]'),
+                 composition: t('[data-field=analysis-composition]'),
+                 structure: t('[data-field=analysis-structure]'),
+                 analysisText: t('[data-section=model-analysis]'),
+                 impactState: t('[data-field=impact-state]'),
+                 impactHeading: t('[data-field=impact-heading]'),
+                 impactRows: [...document.querySelectorAll('[data-impact]')]
+                   .map((tr) => [...tr.children].map((c) => c.textContent.trim()).join('|')),
+                 impactTime: t('[data-field=impact-time]'),
+                 transformations: t('[data-field=impact-transformations]'),
+                 impactText: t('[data-section=presolve-impact]'),
                  stages: [...document.querySelectorAll('[data-stage]')].map((s) => s.dataset.stage) };
       })()`);
       await screenshot(name);
@@ -206,8 +219,17 @@ async function main() {
     check(page.pipeline === ALL_DONE, `LP pipeline: ${page.pipeline}`);
     check(page.terminal === 'validation' && page.pipelineSummary === 'Ran end to end: validation passed.',
       `LP termination: ${page.terminal} / ${page.pipelineSummary}`);
-    check(page.sections.join() === 'pipeline,run,model,presolve,dispatch,execution,validation',
-      `pipeline above the evidence: ${page.sections}`);
+    check(page.sections.join() ===
+      'pipeline,model-analysis,presolve-impact,run,model,presolve,dispatch,execution,validation',
+      `pipeline, analysis, then the evidence: ${page.sections}`);
+    check(page.analysisClass === 'LP' && page.analysisSense === 'Minimize' && page.analysisVariables === '3',
+      `LP analysis: ${page.analysisClass} ${page.analysisSense} ${page.analysisVariables}`);
+    check(page.composition === 'Variable composition 3 continuous 0 integer 0 binary', `LP composition: ${page.composition}`);
+    check(page.impactState === 'Converged' && page.impactHeading === 'Original → reduced', 'LP impact state');
+    check(page.impactRows.join(' / ') === 'Variables|3|2|−1|33.3 % / Constraints|1|1|0|0 % / Nonzeros|3|2|−1|33.3 %',
+      `LP impact rows: ${page.impactRows.join(' / ')}`);
+    check(/^presolve time \d/.test(page.impactTime ?? ''), `LP presolve time: ${page.impactTime}`);
+    check(page.transformations === '1 transformation logged fix_variable ×1', `LP transformations: ${page.transformations}`);
 
     // Clicking a stage moves to its detailed section.
     for (const [stageId, sectionName] of [['dispatch', 'dispatch'], ['presolve', 'presolve'], ['engine', 'execution']]) {
@@ -225,10 +247,16 @@ async function main() {
 
     page = await solve('03-milp', 'tests/cli/knapsack_milp.mps', { threads: '1' });
     check(page.problemClass === 'MILP' && page.objective === '7', 'MILP');
+    check(page.analysisClass === 'MILP' && page.analysisSense === 'Maximize' &&
+      page.composition === 'Variable composition 0 continuous 0 integer 3 binary', `MILP analysis: ${page.composition}`);
+    check(page.impactRows.every((row) => row.endsWith('|0|0 %')), `MILP unchanged: ${page.impactRows}`);
     check(page.executed === 'executed branch and cut', 'MILP engine');
 
     page = await solve('04-qp', 'tests/cli/convex_qp.mps');
     check(page.problemClass === 'QP' && page.objective === '-4.5' && page.executed === 'executed qp', 'QP');
+    check(page.analysisClass === 'QP' && page.transformations === '2 transformations logged tighten_upper_bound ×2',
+      `QP tightening only: ${page.transformations}`);
+    check(!/removed/i.test(page.impactText), 'QP: tightenings not called removals');
 
     page = await solve('05-presolve-infeasible', 'tests/mps/test_cases/01_basic_lp.mps');
     check(page.summary.includes('Proved by presolve. The dispatcher was not invoked and no engine ran.'), 'infeasible summary');
@@ -238,6 +266,10 @@ async function main() {
     check(page.pipeline === 'model:completed classification:completed presolve:infeasible dispatch:not_run ' +
       'engine:not_run postsolve:not_run validation:not_run result:infeasible', `infeasible pipeline: ${page.pipeline}`);
     check(page.terminal === 'presolve', 'infeasible ends at presolve');
+    check(page.impactState === 'Proved infeasible' && page.impactHeading === 'Dimensions when presolve stopped',
+      `infeasible impact: ${page.impactState} / ${page.impactHeading}`);
+    check(!page.impactText.includes('%') && page.impactRows.join(' / ') ===
+      'Variables|2|2|0 / Constraints|3|1|−2 / Nonzeros|4|2|−2', `infeasible: no reductions: ${page.impactRows}`);
 
     page = await solve('06-unsupported', 'tests/cli/nonconvex_qp.mps');
     check(page.summary.startsWith('Unsupported') && page.summary.includes('HTTP 422'), `unsupported: ${page.summary}`);
@@ -251,6 +283,18 @@ async function main() {
     check(page.pipeline === 'model:failed classification:not_run presolve:not_run dispatch:not_run ' +
       'engine:not_run postsolve:not_run validation:not_run result:failed', `invalid pipeline: ${page.pipeline}`);
     check(page.terminal === 'model', 'invalid ends at model');
+    check(page.analysisClass === null && page.analysisText.includes('Classification not run — KAIRO did not accept the model'),
+      `invalid analysis: ${page.analysisText}`);
+    check(page.impactState === 'Not run — the model never reached presolve' && page.impactTime === null,
+      `invalid impact: ${page.impactState}`);
+
+    // Unreadable: written to a temporary file and uploaded like any other.
+    const unreadable = path.join(profile, 'unreadable.mps');
+    writeFileSync(unreadable, 'NAME          BAD\nROWS\n N  OBJ\n Q  C1\nCOLUMNS\n    X  OBJ  1.0\nENDATA\n');
+    page = await solve('07b-unreadable-model', unreadable);
+    check(page.summary.startsWith('Invalid model') && page.analysisText.includes('Model not available — KAIRO could not read the file.'),
+      `unreadable analysis: ${page.analysisText}`);
+    check(page.pipeline.startsWith('model:failed') && page.impactState.startsWith('Not run'), 'unreadable: nothing ran');
 
     page = await solve('08-forced-pdlp-cpu', 'tests/cli/simple_lp.mps', { engine: 'pdlp', backend: 'cpu' });
     check(page.selected === 'selected by dispatcher pdlp' && page.executed === 'executed pdlp', 'forced pdlp');
@@ -272,6 +316,23 @@ async function main() {
     check(page.pipeline === 'model:completed classification:completed presolve:completed dispatch:completed ' +
       'engine:infeasible postsolve:not_run validation:not_run result:infeasible', `engine infeasible: ${page.pipeline}`);
     check(page.terminal === 'engine', 'engine-infeasible ends at engine');
+
+    page = await solve('13-structured-milp', 'tests/cli/structured_milp.mps');
+    check(page.objective === '12' && /Big-M rows Detected · max 1000/.test(page.structure) &&
+      /Set partitioning Detected/.test(page.structure) && /Symmetric column groups Detected · 1/.test(page.structure),
+      `structure flags: ${page.structure}`);
+    check(page.impactRows.join(' / ') === 'Variables|4|1|−3|75 % / Constraints|3|0|−3|100 % / Nonzeros|6|0|−6|100 %',
+      `structured impact: ${page.impactRows}`);
+
+    page = await solve('14-network-no-reduction', 'tests/cli/network_flow_lp.mps');
+    check(page.objective === '4' && /Network structure Detected/.test(page.structure), `network: ${page.structure}`);
+    check(page.impactRows.every((row) => row.endsWith('|0|0 %')) &&
+      page.transformations === '3 transformations logged tighten_upper_bound ×3', `network impact: ${page.transformations}`);
+
+    page = await solve('15-no-constraints', 'tests/cli/no_constraints_lp.mps');
+    check(page.impactRows.join(' / ') === 'Variables|2|2|0|0 % / Constraints|0|0|0|— / Nonzeros|0|0|0|—',
+      `zero denominators: ${page.impactRows}`);
+    check(!/NaN|Infinity/.test(page.impactText), 'no NaN/Infinity');
 
     page = await solve('12-unbounded', 'tests/cli/unbounded_lp.mps');
     check(page.pipeline.includes('engine:unbounded postsolve:not_run validation:not_run result:unbounded'),

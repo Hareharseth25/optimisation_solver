@@ -206,5 +206,6 @@ test('the pipeline appears above the detailed sections, which are all still pres
   const { renderResult } = await import('../js/report.js');
   const tree = renderResult(fixture('lp_optimal'), { fileName: 'm.mps', fileSize: 1 });
   const order = findAll(tree, (n) => n.attrs['data-section']).map((n) => n.attrs['data-section']);
-  assert.deepEqual(order, ['pipeline', 'run', 'model', 'presolve', 'dispatch', 'execution', 'validation']);
+  assert.deepEqual(order, ['pipeline', 'model-analysis', 'presolve-impact', 'run', 'model', 'presolve',
+    'dispatch', 'execution', 'validation']);
 });

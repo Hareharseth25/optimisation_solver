@@ -34,7 +34,23 @@ Then open **http://127.0.0.1:8765/**. The same process serves the UI and the API
 1. **Model:** choose an MPS file (`.mps`, or `.qps` with QUADOBJ/QMATRIX). The sidebar shows the file name, its size, and whether it is ready. The file's text is sent in the request body; no path ever leaves the browser.
 2. **Solver:** pick the options below. Fields that do not apply are disabled. For example, the backend is disabled when the chosen engine has no CUDA backend, and the CUDA device is disabled when the backend is CPU.
 3. **Run:** the button disables itself and the page says *Running KAIRO…*. There is no progress bar, because KAIRO reports nothing until it finishes.
-4. **Report:** the result headline, then the **solver pipeline**, then the detailed Run, Model, Presolve, Dispatch, Execution and Validation sections, all read from the returned record.
+4. **Report:** the result headline, then the **solver pipeline**, then **Model analysis** and **Presolve impact**, then the detailed Run, Model, Presolve, Dispatch, Execution and Validation sections, all read from the returned record.
+
+### Model analysis and presolve impact
+
+Both cards are pure transformations of the record (`js/analysis.js`). They never re-read the MPS, classify, or run presolve.
+
+- **Model analysis** ("What did KAIRO receive?"):
+  - reads `classification.{problem_class, num_columns, num_rows, nonzeros, num_continuous, num_integer, num_binary}` and `instance.objective_sense`;
+  - shows the structure flags (`has_network_structure`, `has_big_m`/`max_big_m`, `has_set_partitioning`, `symmetric_groups`, `coef_range_ratio`) as *Detected / Not detected*, and only when the record carries them;
+  - without a classification it shows only `instance` dimensions, or "Model not available" when the file could not be read.
+- **Presolve impact** ("What did presolve change?"):
+  - compares `presolve.original_*` with `presolve.reduced_*` (never `instance` or `classification` values) for variables, constraints and nonzeros;
+  - reduction is `100·(original − reduced)/original` when original > 0, otherwise "—";
+  - state is *Not run* (`presolve` null), *Proved infeasible*, *Converged*, or *Stopped before convergence (pass limit)*;
+  - when presolve proved infeasibility the table is titled *Dimensions when presolve stopped* and shows no reduction, because those numbers are not a reduced model;
+  - transformation counts are shown in the record's own vocabulary (`tighten_upper_bound ×2`), never as items removed;
+  - presolve time comes from `stage_seconds.presolve`, shown only when it is set.
 
 ### Solver pipeline
 
@@ -162,6 +178,7 @@ A solve is request → response. See `docs/architecture.md` ("Explorer Applicati
 | `js/api.js` | `POST /api/solve` and `GET /api/health`; refuses a second submission while one runs |
 | `js/report.js` | pure render functions over the `optimsolver.solve.v1` record |
 | `js/pipeline.js` | `buildPipeline(record)` (record → stage states, pure) and its rendering |
+| `js/analysis.js` | `buildModelAnalysis(record)`, `buildPresolveImpact(record)` (pure) and their rendering |
 | `js/format.js` | number, time and residual formatting; `null` → "Not run" / "Unknown", never 0 |
 | `js/vdom.js` | tiny `h()` tree, mounted with `textContent` only (no `innerHTML`) |
 
@@ -170,5 +187,5 @@ The engine menu lists the names `solver::parseEngine` accepts for MPS models. `e
 ## Tests
 
 - `explorer/tests/test_service.py` (CTest `explorer_service`): runs every case through the service and directly through the binary, and requires identical records apart from wall-clock values. Also covers static file serving, path traversal and the UI's engine names.
-- `explorer/web/tests/*.test.js` (CTest `explorer_ui`, or `npm test` in `explorer/web`): Node's built-in runner. Covers upload state, the options form, request format, duplicate-submit refusal, and rendering of real service responses, and the exact pipeline state for every case. These fixtures come from `tests/fixtures/make_fixtures.py`: LP, MILP, QP, presolve-infeasible, engine-infeasible, unbounded, unsupported, CUDA refused, invalid, unreadable, limit, forced engine and rejected option.
+- `explorer/web/tests/*.test.js` (CTest `explorer_ui`, or `npm test` in `explorer/web`): Node's built-in runner. Covers upload state, the options form, request format, duplicate-submit refusal, and rendering of real service responses, and the exact pipeline state for every case. These fixtures come from `tests/fixtures/make_fixtures.py`: LP, MILP, QP, presolve-infeasible, engine-infeasible, unbounded, unsupported, CUDA refused, invalid, unreadable, limit, forced engine, rejected option, MIQP, a structured MILP (big-M, set partitioning, symmetry), a network LP (bound tightening only), and a model with no constraints (zero denominators).
 - `explorer/web/tests/e2e/browser.e2e.js` (CTest `explorer_ui_browser`, enabled with `-DEXPLORER_BROWSER_TESTS=ON`): starts the service and drives headless Chrome through the DevTools Protocol. It uploads real MPS files through the file input, presses Run, checks the page, and fails on any page error or CSP violation. Add `--screenshots <dir>` and `--color-scheme light|dark` to capture the UI.
