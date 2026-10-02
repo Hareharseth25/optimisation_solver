@@ -92,6 +92,79 @@ A solve runs in six stages:
 
 Presolve and postsolve each run **exactly once** and share one transformation log. Running presolve twice would make the coordinates drift, and dual reconstruction needs the exact history of every reduction. [docs/architecture.md](docs/architecture.md) has the full design.
 
+## KAIRO v1 — Native Desktop Product
+
+*Added 2026-10-02, after PR #20 (`release/kairo-v1`) was merged into `main`.*
+
+This repository holds the numerical optimisation core historically documented as **OptimSolver**: the pipeline, engines, benchmarks and validation described in the rest of this README. **KAIRO** (*Kernel for Advanced Integer & Real Optimization*) is the name of the product built on that core. It has a command-line interface (KAIRO CLI, the `optimsolver` binary) and, since KAIRO v1, a native, installable desktop application (**KAIRO Desktop**, in [`desktop/`](desktop/)). Everything above about the solver applies unchanged: KAIRO Desktop adds no solver logic of its own.
+
+```mermaid
+flowchart TB
+    K["KAIRO"]
+    C["KAIRO Core"]
+    CLI["KAIRO CLI"]
+    GUI["KAIRO Desktop"]
+    CORE["Model → Classify → Presolve → Dispatch → Engine → Postsolve → Validate"]
+    REC["optimsolver.solve.v1"]
+
+    K --> C
+    K --> CLI
+    K --> GUI
+    C --> CORE
+    CLI --> C
+    GUI --> C
+    C --> REC
+    GUI --> REC
+```
+
+| Part | What it is |
+|---|---|
+| **KAIRO Core** | Model IR, MPS parsing and structural validation, classification, presolve, dispatcher, numerical engines, postsolve and validation, reached through `solver::solve(...)` |
+| **KAIRO CLI** | The interactive and batch command-line interface (`optimsolver`) |
+| **KAIRO Desktop** | A native Qt 6 / C++17 GUI, built with CMake, for macOS, Windows and Linux |
+
+**One solver.** The CLI and the desktop use the same KAIRO Core. The desktop calls `solver::solve(model, options, &report)` **in-process**, because it links the core libraries directly. KAIRO's own record writer then turns that call's result and report into an `optimsolver.solve.v1` record, the same record `optimsolver solve --json` writes. That record is the boundary between the solver and the desktop's analysis views. The desktop does not repeat classification, presolve, dispatch, validation or any solver logic, and it does not parse CLI text.
+
+**Local and offline.** KAIRO Desktop has no browser, HTTP server, localhost port, cloud service or network dependency, and needs no Python or JavaScript at runtime.
+
+**What the desktop does:**
+- Opens `.mps`/`.qps` models.
+- Sets the engine, compute backend (and CUDA device), time limit and threads, then solves.
+- Shows the result with its supporting evidence, the solver pipeline, model analysis, presolve impact, the dispatch decision and execution, and validation details.
+- Saves runs locally: each saved run is KAIRO's record, never a copy of the model file.
+- Exports and imports `optimsolver.solve.v1` records. Imported records are data only and are never re-solved.
+- Compares two runs. Runs count as the same model only when the input SHA-256 values KAIRO recorded match. The comparison reports recorded differences, never a "winner", "better" or "best".
+- Follows the system's light or dark appearance.
+
+**Trust wording is deliberately conservative.** The desktop says only what KAIRO's record supports: *Checked*, *Not checked*, *Not available*, *Verified by KAIRO validation*, *Proved by presolve*, *Reported by engine*, *Optimality not established*, and *Global optimality evidence not independently recorded*. An optimal integer result reads "Optimal — according to the solver". A relaxation reads "Optimal for the continuous relaxation".
+
+### KAIRO v1 platform status (2026-10-02)
+
+| Platform | Status |
+|---|---|
+| macOS | Validated locally on Apple Silicon (development and release builds, deployed universal `.app` and DMG), as documented in [desktop/README.md](desktop/README.md). Desktop CI passes on `macos-14`. |
+| Windows x64 | Desktop CI passes on Windows Server 2022 (`windows-2022`, MSVC). |
+| Linux x64 | Desktop CI passes on Ubuntu 24.04 (`ubuntu-24.04`). |
+| Windows ARM64 | Not supported. |
+| Linux ARM64 | Not validated; not supported. |
+
+The GitHub Actions `desktop` workflow ([`.github/workflows/desktop.yml`](.github/workflows/desktop.yml)) ran successfully for the PR #20 commit (`bcd132f`), on both the push and the pull-request run. On each of the three runners it:
+1. built the desktop app, its tests and the CLI with official Qt 6.8;
+2. ran the desktop CTest cases;
+3. installed the app with the Qt runtime deployed;
+4. launched the installed app with its native platform plugin;
+5. produced a release artifact.
+
+The artifacts are `kairo-desktop-macOS` (DMG), `kairo-desktop-Windows` (zip) and `kairo-desktop-Linux` (AppImage). On macOS the run also checked that the bundle has no build-machine library paths.
+
+**Current limitations:**
+- macOS builds are **ad hoc signed**, not Developer ID signed or notarized.
+- A running solve **cannot be cancelled**, because KAIRO Core has no cancellation API. Use the time limit to bound a solve.
+- The Windows ARM64 and Linux ARM64 limits are listed in the platform table above.
+- KAIRO v1 makes no claim of production readiness, industrial-scale performance, superiority over other solvers, or equivalence to CPLEX or Xpress. The [Limitations](#limitations) below still apply.
+
+More: [desktop/README.md](desktop/README.md) (build, packaging, workflow) · [docs/architecture.md](docs/architecture.md) (product architecture and the solve-record contract).
+
 ## Engines
 
 | Engine | `--solver` | Solves | Method | Notable techniques | Backend |
