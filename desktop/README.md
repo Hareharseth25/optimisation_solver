@@ -129,9 +129,9 @@ Saved runs are one JSON file per run in the per-user application data directory 
 
 ## Packaging and release artifacts
 
-With `-DKAIRO_DESKTOP_DEPLOY=ON`, `cmake --install` runs Qt's own deployment (`qt_generate_deploy_app_script`):
+With `-DKAIRO_DESKTOP_DEPLOY=ON`, `cmake --install` runs Qt's own deployment (`qt_generate_deploy_app_script`; on Windows `qt_deploy_runtime_dependencies` with the plugin directory set to `bin`):
 - **macOS:** `macdeployqt`, then `packaging/macos/finalize_bundle.cmake`. That step strips build-machine rpaths and install names and ad hoc signs the bundle.
-- **Windows:** `windeployqt`, plus the MSVC runtime DLLs via CMake's `InstallRequiredSystemLibraries`.
+- **Windows:** `windeployqt` with the Qt plugins next to `KAIRO.exe` (`bin/platforms/qwindows.dll`, `bin/styles/`, …), plus the MSVC runtime DLLs via CMake's `InstallRequiredSystemLibraries`. Everything is in `bin/`, so `bin/` alone is the application.
 - **Linux:** Qt's runtime-dependency deployment into `bin/`, `lib/` and `plugins/`, plus the freedesktop entry and icon.
 
 KAIRO Core is linked statically into the executable, so there are no solver libraries to ship separately.
@@ -160,7 +160,7 @@ xcrun stapler staple KAIRO-0.1.0-macos-universal.dmg
 cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DKAIRO_DESKTOP_DEPLOY=ON -DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/msvc2022_64
 cmake --build build-release
 cmake --install build-release --prefix dist
-Compress-Archive -Path dist\bin -DestinationPath KAIRO-0.1.0-windows-x64.zip   # dist\bin\KAIRO.exe + Qt + MSVC runtime
+Compress-Archive -Path dist\bin -DestinationPath KAIRO-0.1.0-windows-x64.zip   # dist\bin\KAIRO.exe + Qt DLLs and plugins + MSVC runtime
 ```
 Code signing (`signtool sign /fd sha256 /tr <timestamp-url> /td sha256 /f <cert> dist\bin\KAIRO.exe`) needs a certificate and is not done.
 

@@ -141,6 +141,10 @@ jobs:
               hdiutil create -volname KAIRO -srcfolder dist/KAIRO.app -ov -format UDZO artifacts/KAIRO-0.1.0-macos.dmg ;;
             Windows)
               # bin/ holds KAIRO.exe, the Qt DLLs and plugins, and the MSVC runtime.
+              # Only bin/ is zipped, so the deployment must not put anything outside it.
+              test -f dist/bin/platforms/qwindows.dll || { echo "::error::dist/bin/platforms/qwindows.dll is missing"; exit 1; }
+              extra=$(ls -A dist | grep -vx bin || true)
+              if [ -n "$extra" ]; then echo "::error::deployed outside dist/bin, not packaged: $extra"; exit 1; fi
               (cd dist && 7z a ../artifacts/KAIRO-0.1.0-windows-x64.zip bin) ;;
             Linux)
               (cd artifacts && "$GITHUB_WORKSPACE/desktop/packaging/linux/make_appimage.sh" "$GITHUB_WORKSPACE/dist")
@@ -149,6 +153,36 @@ jobs:
                 --capture "$GITHUB_WORKSPACE/tests/cli/presolve_reduction.mps" --out appimage.png --runs-dir runs-ai \
                 | grep -q "result:completed" ;;
           esac
+
+      - name: Windows zip is self-contained (extracted KAIRO.exe starts with qwindows)
+        if: runner.os == 'Windows'
+        shell: bash
+        # Tests the zip as a user gets it: extracted outside the workspace, with
+        # no QT_PLUGIN_PATH (install-qt-action sets it to the Qt installation)
+        # and the Qt installation removed from PATH, so every Qt DLL and plugin
+        # must come from the zip. The native platform plugin is used, not offscreen.
+        run: |
+          dir="$(cygpath -u "$RUNNER_TEMP")/kairo-zip"
+          tmp="$(cygpath -m "$RUNNER_TEMP")"
+          rm -rf "$dir"
+          pwsh -NoProfile -Command "Expand-Archive -LiteralPath 'artifacts/KAIRO-0.1.0-windows-x64.zip' -DestinationPath '$(cygpath -w "$dir")'"
+          test -f "$dir/bin/platforms/qwindows.dll" || { echo "::error::the zip has no bin/platforms/qwindows.dll"; exit 1; }
+
+          unset QT_PLUGIN_PATH QML2_IMPORT_PATH QT_QPA_PLATFORM QT_QPA_PLATFORM_PLUGIN_PATH
+          qt_bin="$(cygpath -u "$QT_ROOT_DIR")/bin"
+          PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vixF "$qt_bin" | paste -sd: -)"
+          while IFS= read -r d; do
+            if [ -n "$d" ] && [ -e "$d/Qt6Core.dll" ]; then echo "::error::Qt is still on PATH: $d"; exit 1; fi
+          done < <(printf '%s\n' "$PATH" | tr ':' '\n')
+
+          export QT_DEBUG_PLUGINS=1 QT_FORCE_STDERR_LOGGING=1
+          "$dir/bin/KAIRO.exe" --capture "$GITHUB_WORKSPACE/tests/cli/presolve_reduction.mps" \
+            --out "$tmp/zip-capture.png" --runs-dir "$tmp/zip-runs" > zip-run.txt 2>&1 \
+            || { cat zip-run.txt; echo "::error::KAIRO.exe from the zip failed to start or solve"; exit 1; }
+          grep -q "result:completed" zip-run.txt || { cat zip-run.txt; exit 1; }
+          # The platform plugin that loaded is the zip's own qwindows.dll.
+          grep -iF "$(cygpath -m "$dir")/bin/platforms/qwindows.dll" zip-run.txt \
+            || { cat zip-run.txt; echo "::error::qwindows.dll was not loaded from the extracted zip"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         if: always()
