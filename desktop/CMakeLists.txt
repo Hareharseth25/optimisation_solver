@@ -86,7 +86,8 @@ endforeach()
 # plus the freedesktop entry on Linux. With -DKAIRO_DESKTOP_DEPLOY=ON the
 # install also copies the Qt runtime next to it using Qt's own deployment
 # (macdeployqt on macOS, windeployqt on Windows, Qt's runtime-dependency
-# deployment on Linux), so the result does not depend on where Qt was
+# deployment on Linux; on Windows the plugins go into bin/ next to KAIRO.exe),
+# so the result does not depend on where Qt was
 # installed on the build machine (e.g. a Homebrew prefix).
 include(GNUInstallDirs)
 install(TARGETS KAIRO
@@ -106,11 +107,30 @@ if(WIN32)
 endif()
 option(KAIRO_DESKTOP_DEPLOY "Copy the Qt runtime into the installed KAIRO Desktop application" OFF)
 if(KAIRO_DESKTOP_DEPLOY)
-    qt_generate_deploy_app_script(
-        TARGET KAIRO
-        OUTPUT_SCRIPT kairo_deploy_script
-        NO_UNSUPPORTED_PLATFORM_ERROR
-    )
+    if(WIN32)
+        # windeployqt with the plugins next to KAIRO.exe (bin/platforms/qwindows.dll,
+        # bin/styles/, ...), so bin/ alone is the complete application and is what
+        # the zip ships. Qt's default puts them in a sibling plugins/ directory,
+        # which a zip of bin/ leaves out. Qt's .qm translations are not deployed:
+        # KAIRO installs no QTranslator, so they are never loaded.
+        qt_generate_deploy_script(
+            TARGET KAIRO
+            OUTPUT_SCRIPT kairo_deploy_script
+            CONTENT "
+qt_deploy_runtime_dependencies(
+    EXECUTABLE $<TARGET_FILE:KAIRO>
+    GENERATE_QT_CONF
+    PLUGINS_DIR ${CMAKE_INSTALL_BINDIR}
+    NO_TRANSLATIONS
+)
+")
+    else()
+        qt_generate_deploy_app_script(
+            TARGET KAIRO
+            OUTPUT_SCRIPT kairo_deploy_script
+            NO_UNSUPPORTED_PLATFORM_ERROR
+        )
+    endif()
     install(SCRIPT ${kairo_deploy_script})
     if(APPLE)
         install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\"
