@@ -94,8 +94,6 @@ Presolve and postsolve each run **exactly once** and share one transformation lo
 
 ## KAIRO v1 — Native Desktop Product
 
-*Added 2026-10-02, after PR #20 (`release/kairo-v1`) was merged into `main`.*
-
 This repository holds the numerical optimisation core historically documented as **OptimSolver**: the pipeline, engines, benchmarks and validation described in the rest of this README. **KAIRO** (*Kernel for Advanced Integer & Real Optimization*) is the name of the product built on that core. It has a command-line interface (KAIRO CLI, the `optimsolver` binary) and, since KAIRO v1, a native, installable desktop application (**KAIRO Desktop**, in [`desktop/`](desktop/)). Everything above about the solver applies unchanged: KAIRO Desktop adds no solver logic of its own.
 
 ```mermaid
@@ -138,32 +136,34 @@ flowchart TB
 
 **Trust wording is deliberately conservative.** The desktop says only what KAIRO's record supports: *Checked*, *Not checked*, *Not available*, *Verified by KAIRO validation*, *Proved by presolve*, *Reported by engine*, *Optimality not established*, and *Global optimality evidence not independently recorded*. An optimal integer result reads "Optimal — according to the solver". A relaxation reads "Optimal for the continuous relaxation".
 
-### KAIRO v1 platform status (2026-10-02)
+### KAIRO v1 — Platform Support
 
-| Platform | Status |
+KAIRO is a native, cross-platform desktop application. KAIRO Desktop communicates with KAIRO Core directly, in-process. It uses the same KAIRO Core as the KAIRO CLI. It has no browser, local web server, Python runtime, JavaScript runtime or cloud dependency.
+
+| Platform | KAIRO v1 |
 |---|---|
-| macOS | Validated locally on Apple Silicon (development and release builds, deployed universal `.app` and DMG), as documented in [desktop/README.md](desktop/README.md). Desktop CI passes on `macos-14`. |
-| Windows x64 | Desktop CI passes on Windows Server 2022 (`windows-2022`, MSVC). |
-| Linux x64 | Desktop CI passes on Ubuntu 24.04 (`ubuntu-24.04`). |
-| Windows ARM64 | Not supported. |
-| Linux ARM64 | Not validated; not supported. |
-
-The GitHub Actions `desktop` workflow ([`.github/workflows/desktop.yml`](.github/workflows/desktop.yml)) ran successfully for the PR #20 commit (`bcd132f`), on both the push and the pull-request run. On each of the three runners it:
-1. built the desktop app, its tests and the CLI with official Qt 6.8;
-2. ran the desktop CTest cases;
-3. installed the app with the Qt runtime deployed;
-4. launched the installed app with its native platform plugin;
-5. produced a release artifact.
-
-The artifacts are `kairo-desktop-macOS` (DMG), `kairo-desktop-Windows` (zip) and `kairo-desktop-Linux` (AppImage). On macOS the run also checked that the bundle has no build-machine library paths.
+| macOS | Supported |
+| Windows x64 | Supported |
+| Linux x64 | Supported |
+| Windows ARM64 | Not supported in KAIRO v1 |
+| Linux ARM64 | Not supported in KAIRO v1 |
 
 **Current limitations:**
-- macOS builds are **ad hoc signed**, not Developer ID signed or notarized.
-- A running solve **cannot be cancelled**, because KAIRO Core has no cancellation API. Use the time limit to bound a solve.
-- The Windows ARM64 and Linux ARM64 limits are listed in the platform table above.
-- KAIRO v1 makes no claim of production readiness, industrial-scale performance, superiority over other solvers, or equivalence to CPLEX or Xpress. The [Limitations](#limitations) below still apply.
+- macOS release builds are ad hoc signed, not Developer ID signed or notarized.
+- A running solve cannot be cancelled; a time limit bounds how long a solve runs.
+- Windows ARM64 and Linux ARM64 are not supported.
+- KAIRO v1 does not claim production readiness or industrial-scale performance.
+- KAIRO does not claim superiority over, or equivalence to, commercial solvers such as CPLEX or Xpress. The [Limitations](#limitations) below still apply.
 
-More: [desktop/README.md](desktop/README.md) (build, packaging, workflow) · [docs/architecture.md](docs/architecture.md) (product architecture and the solve-record contract).
+## Download KAIRO
+
+KAIRO is available as a native desktop application. Download it from the **[KAIRO v1.0.0 release](https://github.com/RaghavGupta2910/optimisation_solver/releases/tag/v1.0.0)**:
+
+| Platform | Download |
+|---|---|
+| macOS | Disk image (`.dmg`) |
+| Windows x64 | ZIP archive (`.zip`) |
+| Linux x86-64 | AppImage (`.AppImage`) |
 
 ## Engines
 
